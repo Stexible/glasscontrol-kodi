@@ -111,7 +111,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == '/api/sources/remove':
                 return self._send(200, ops.sources_remove(sources_xml(), d['media'], d['name'], d.get('path', ''), passwords_xml()))
             if path == '/api/sources/content':
-                return self._send(200, ops.set_video_content(db_dir(), d['path'], d.get('content', '')))
+                return self._send(200, ops.set_video_content(db_dir(), d['path'], d.get('content', ''), d.get('scraper', '')))
             if path == '/api/lib/fix':
                 return self._send(200, ops.lib_fix(db_dir(), sources_xml(), passwords_xml(), d.get('kind', '')))
             if path == '/api/lib/reset':
