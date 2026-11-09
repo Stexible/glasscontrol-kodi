@@ -149,11 +149,18 @@
   K.sourcesDialog = function (media) {
     media = media === 'video' || media === 'music' || media === 'pictures' ? media : 'files';
     return K.be.init().then(function () {
-      var extra = (K.be.ok && media === 'video') ? K.be.call('/api/sources/list', { media: media }).catch(function () { return {}; }) : Promise.resolve({});
+      var extra = (K.be.ok && media === 'video') ? K.be.call('/api/sources/list', { media: media }).catch(function () { return {}; }) : (K.be.ok ? K.be.call('/api/sources/list', { media: media }).catch(function () { return {}; }) : Promise.resolve({}));
       return Promise.all([K.rpc('Files.GetSources', { media: media }), extra]);
     }).then(function (rr) {
-      var r = rr[0], cmap = (rr[1] && rr[1].content) || {};
-      var src = r.sources || [], lib = media === 'music' ? 'music' : media === 'video' ? 'video' : '';
+      var r = rr[0], extra = rr[1] || {}, cmap = extra.content || {};
+      // если серверная часть доступна — берём список источников из sources.xml (на лету, без перезапуска Kodi)
+      var src;
+      if (K.be.ok && extra.sources) {
+        src = extra.sources.map(function (s) { return { label: s.name, file: (s.paths && s.paths[0]) || '' }; });
+      } else {
+        src = r.sources || [];
+      }
+      var lib = media === 'music' ? 'music' : media === 'video' ? 'video' : '';
       var m = K.ui.modal({ title: t('Источники') + ': ' + t(MEDIA_NAME[media]), cls: 'wide', body: html`
         ${K.be.ok ? '' : K.be.hint()}
         <div class="glass panel list" style="padding:6px;margin-bottom:14px">${src.length ? src.map(function (s) {
