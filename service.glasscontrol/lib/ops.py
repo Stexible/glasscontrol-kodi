@@ -562,6 +562,45 @@ def video_content_map(db_dir):
         con.close()
 
 
+def debug_info(db_dir):
+    out = {'video': [], 'music': []}
+    for kind, key in (('video', 'video'), ('music', 'music')):
+        db = _db_opt(db_dir, kind)
+        if not db:
+            out[key] = {'error': 'db not found'}
+            continue
+        con = _db_connect(db)
+        try:
+            cols = _cols(con, 'path')
+            rows = con.execute('SELECT * FROM path').fetchall()
+            out[key] = {'db': os.path.basename(db), 'cols': cols, 'rows': [list(r) for r in rows]}
+        finally:
+            con.close()
+    # tail of kodi.log
+    try:
+        import xbmc
+        logp = xbmc.translatePath('special://logpath/kodi.log')
+    except Exception:
+        logp = None
+    if logp and os.path.exists(logp):
+        try:
+            with open(logp, 'rb') as f:
+                f.seek(0, 2)
+                size = f.tell()
+                f.seek(max(0, size - 120000))
+                out['log_tail'] = f.read().decode('utf-8', 'replace')
+        except Exception as e:
+            out['log_error'] = str(e)
+    # internet check
+    try:
+        import urllib.request
+        r = urllib.request.urlopen('http://www.google.com/generate_204', timeout=8)
+        out['internet'] = 'ok (google ' + str(r.getcode()) + ')'
+    except Exception as e:
+        out['internet'] = 'FAIL: ' + str(e)
+    return out
+
+
 def lib_fix(db_dir, xml_path, passwords_path, kind=''):
     res = {'sources': sources_sanitize(xml_path, passwords_path)}
     if kind in ('', 'video'):
@@ -569,9 +608,6 @@ def lib_fix(db_dir, xml_path, passwords_path, kind=''):
     if kind in ('', 'music'):
         res['music'] = fix_music_paths(db_dir, xml_path)
     return res
-
-
-def lib_reset(db_dir, kind=''):
     """Полностью очищает таблицы path в БД (видео и/или музыка) — чистый лист. Файлы на шарах не трогает."""
     out = {}
     kinds = ['video', 'music'] if kind in ('', 'all') else [kind]
