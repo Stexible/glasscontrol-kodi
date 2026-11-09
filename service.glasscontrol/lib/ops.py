@@ -18,126 +18,24 @@ def list_dir(path):
     try:
         dirs, files = vfs.listdir(path)
     except Exception as e:  # noqa: BLE001
-        raise OpError('cannot read %s: %s' % (path, e))
+        raise OpError(str(e))
     out = []
     for n in dirs:
-        p = vfs.join(path, n) + vfs.sep_of(path)
-        out.append({'name': n, 'path': p, 'dir': True, 'size': 0, 'mtime': 0})
+        out.append({'name': n, 'path': vfs.join(path, n) + vfs.sep_of(path), 'dir': True, 'size': 0, 'mtime': 0})
     for n in files:
-        p = vfs.join(path, n)
-        size, mtime = vfs.stat(p)
-        out.append({'name': n, 'path': p, 'dir': False, 'size': size, 'mtime': mtime})
-    out.sort(key=lambda x: (not x['dir'], x['name'].lower()))
-    return {'path': path, 'parent': vfs.parent(path), 'items': out}
-
-
-def _copy_tree(src, dst):
-    vfs.mkdir(dst.rstrip('/\\') + '/')
-    dirs, files = vfs.listdir(src)
-    for f in files:
-        if not vfs.copy_file(vfs.join(src, f), vfs.join(dst, f)):
-            raise OpError('copy failed: ' + f)
-    for d in dirs:
-        _copy_tree(vfs.join(src, d) + vfs.sep_of(src), vfs.join(dst, d) + vfs.sep_of(dst))
-
-
-def _is_dir(p):
-    return p.endswith(('/', '\\')) or vfs.isdir(p)
-
-
-def _target(src, dst_dir):
-    name = vfs.basename(src)
-    t = vfs.join(dst_dir, name)
-    return t + (vfs.sep_of(dst_dir) if _is_dir(src) else '')
-
-
-def copy(srcs, dst, overwrite=False):
-    res = {'ok': [], 'failed': []}
-    for s in srcs:
-        try:
-            t = _target(s, dst)
-            if vfs.exists(t) and not overwrite:
-                raise OpError('exists')
-            if t.rstrip('/\\') == s.rstrip('/\\') or (_is_dir(s) and t.startswith(s.rstrip('/\\') + '/')):
-                raise OpError('cannot copy into itself')
-            if _is_dir(s):
-                _copy_tree(s, t)
-            elif not vfs.copy_file(s, t):
-                raise OpError('copy failed')
-            res['ok'].append(s)
-        except Exception as e:  # noqa: BLE001
-            res['failed'].append({'path': s, 'error': str(e)})
-    return res
-
-
-def move(srcs, dst, overwrite=False):
-    res = {'ok': [], 'failed': []}
-    for s in srcs:
-        try:
-            if not vfs.depth_ok(s):
-                raise OpError('protected path')
-            t = _target(s, dst)
-            if vfs.exists(t) and not overwrite:
-                raise OpError('exists')
-            if _is_dir(s) and t.startswith(s.rstrip('/\\') + '/'):
-                raise OpError('cannot move into itself')
-            ok = False
-            try:
-                ok = vfs.rename(s.rstrip('/\\') if _is_dir(s) else s, t.rstrip('/\\') if _is_dir(s) else t)
-            except Exception:  # noqa: BLE001
-                ok = False
-            if not ok:                       # другая файловая система — копия + удаление
-                if _is_dir(s):
-                    _copy_tree(s, t)
-                    vfs.rmdir(s)
-                else:
-                    if not vfs.copy_file(s, t):
-                        raise OpError('copy failed')
-                    vfs.delete_file(s)
-            res['ok'].append(s)
-        except Exception as e:  # noqa: BLE001
-            res['failed'].append({'path': s, 'error': str(e)})
-    return res
-
-
-def rename(path, name):
-    if not vfs.depth_ok(path):
-        raise OpError('protected path')
-    if not name or '/' in name or '\\' in name:
-        raise OpError('bad name')
-    d = _is_dir(path)
-    t = vfs.join(vfs.parent(path), name)
-    if vfs.exists(t):
-        raise OpError('exists')
-    if not vfs.rename(path.rstrip('/\\') if d else path, t):
-        raise OpError('rename failed')
-    return {'path': t + (vfs.sep_of(path) if d else '')}
-
-
-def delete(paths):
-    res = {'ok': [], 'failed': []}
-    for p in paths:
-        try:
-            if not vfs.depth_ok(p):
-                raise OpError('protected path')
-            if _is_dir(p):
-                vfs.rmdir(p)
-            elif not vfs.delete_file(p):
-                raise OpError('delete failed')
-            res['ok'].append(p)
-        except Exception as e:  # noqa: BLE001
-            res['failed'].append({'path': p, 'error': str(e)})
-    return res
+        out.append({'name': n, 'path': vfs.join(path, n), 'dir': False, 'size': 0, 'mtime': 0})
+    return {'path': path, 'items': out}
 
 
 def mkdir(path, name):
-    if not name or '/' in name or '\\' in name:
-        raise OpError('bad name')
-    t = vfs.join(path, name)
-    if vfs.exists(t) or vfs.exists(t + '/'):
-        raise OpError('exists')
-    vfs.mkdir(t + vfs.sep_of(path))
-    return {'path': t + vfs.sep_of(path)}
+    if not path or not name:
+        raise OpError('path and name required')
+    full = vfs.join(path, name)
+    if vfs.exists(full):
+        raise OpError('already exists')
+    if not vfs.mkdir(full):
+        raise OpError('mkdir failed')
+    return {'path': full}
 
 
 # ---------------------------------------------------------------- sources.xml
@@ -148,7 +46,6 @@ _URL_RE = re.compile(r'^([a-z0-9+]+)://([^/]*)(?:/([^/]*))?', re.I)
 
 
 def split_auth(path):
-    """URL → (путь без логина/пароля, логин, пароль)."""
     p = (path or '').strip()
     m = _AUTH_RE.match(p)
     if not m:
@@ -158,18 +55,17 @@ def split_auth(path):
 
 
 def share_key(path):
-    """Ключ passwords.xml: scheme://host/share — так его строит CURL::GetShareName (без подпапок и порта)."""
     clean, _, _ = split_auth(path)
     m = _URL_RE.match(clean)
     if not m:
         return ''
     scheme, host, share = m.group(1).lower(), m.group(2), m.group(3) or ''
     if host.startswith('[') and ']' in host:
-        host = host[1:host.index(']')]      # IPv6: [::1]:445 → ::1
+        host = host[1:host.index(']')]
     elif ':' in host:
         h, _, port = host.rpartition(':')
         if port.isdigit():
-            host = h                      # host:445 → host
+            host = h
     return scheme + '://' + host + ('/' + share if share else '/')
 
 
@@ -280,7 +176,6 @@ def sources_add(xml_path, media, name, path, passwords_path=''):
     _save(root, xml_path)
     auth = False
     if user:
-        # Kodi не использует логин/пароль из sources.xml — только из passwords.xml
         auth = passwords_upsert(passwords_path, clean, _with_auth(clean, user, pw))
     return {'restart': True, 'path': clean, 'auth': auth}
 
@@ -290,12 +185,10 @@ def _norm(p):
 
 
 def _nn(x):
-    """Имя для сравнения: Kodi показывает «_» как пробел и меняет регистр, поэтому сравниваем только буквы и цифры."""
     return ''.join(c for c in (x or '').lower() if c.isalnum())
 
 
 def sources_remove(xml_path, media, name, path='', passwords_path=''):
-    """Удаляет источник по имени, иначе по пути; ищет сначала в нужном разделе, затем во всех."""
     root = _load(xml_path)
     secs = [root.find(media)] + [root.find(m) for m in MEDIA if m != media]
     secs = [x for x in secs if x is not None]
@@ -317,7 +210,6 @@ def sources_remove(xml_path, media, name, path='', passwords_path=''):
         return {'restart': True, 'already': True, 'looked_for': name, 'have': have}
     _save(root, xml_path)
     if passwords_path and removed:
-        # пароль в passwords.xml общий на шару: не трогаем, если на ней остались другие источники
         left = set(share_key(p.text or '') for sec in root for s in sec.findall('source') for p in s.findall('path'))
         for p in removed:
             k = share_key(p)
@@ -327,7 +219,6 @@ def sources_remove(xml_path, media, name, path='', passwords_path=''):
 
 
 def sources_sanitize(xml_path, passwords_path):
-    """Переносит логины/пароли из sources.xml в passwords.xml (Kodi читает их только оттуда)."""
     if not passwords_path:
         return {'moved': 0}
     root = _load(xml_path)
@@ -352,7 +243,7 @@ def sources_sanitize(xml_path, passwords_path):
 
 def _save(root, xml_path):
     try:
-        ET.indent(root)      # py3.9+
+        ET.indent(root)
     except AttributeError:
         pass
     tmp = xml_path + '.tmp'
@@ -360,7 +251,7 @@ def _save(root, xml_path):
     os.replace(tmp, xml_path)
 
 
-# ---------------------------------------------------------------- яркость (Linux sysfs)
+# ---------------------------------------------------------------- brightness
 def _bl():
     base = '/sys/class/backlight'
     if not os.path.isdir(base):
@@ -395,7 +286,7 @@ def brightness_set(pct):
 BUILTIN_OK = ('InstallAddon(', 'UpdateAddonRepos', 'UpdateLocalAddons', 'ActivateScreensaver', 'ReloadSkin', 'CleanLibrary(', 'UpdateLibrary(')
 
 
-# ---------------------------------------------------------------- полная очистка медиатеки
+# ---------------------------------------------------------------- library db
 def _db_file(db_dir, kind):
     import glob
     pat = 'MyVideos' if kind == 'video' else 'MyMusic'
@@ -413,7 +304,6 @@ def _cols(con, table, schema='main'):
     return [r[1] for r in con.execute('PRAGMA %s.table_info("%s")' % (schema, table))]
 
 
-# ---------------------------------------------------------------- содержимое источников
 SCRAPERS = {'movies': 'metadata.themoviedb.org.python',
             'tvshows': 'metadata.tvshows.themoviedb.org.python',
             'musicvideos': 'metadata.local'}
@@ -431,7 +321,7 @@ def _db_connect(db):
     con = sqlite3.connect(db, timeout=30)
     try:
         con.execute('PRAGMA busy_timeout=30000')
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass
     return con
 
@@ -445,7 +335,6 @@ def _norm_path(path):
 
 
 def set_video_content(db_dir, path, content, scraper=''):
-    """Задаёт тип содержимого и скрапер для папки-источника (строка path в MyVideos*.db)."""
     if content not in ('', 'none', 'movies', 'tvshows', 'musicvideos'):
         raise OpError('bad content')
     clean = _norm_path(path)
@@ -484,7 +373,6 @@ def set_video_content(db_dir, path, content, scraper=''):
 
 
 def fix_video_paths(db_dir):
-    """Чинит строки path: без scanRecursive>0 Kodi не заходит в подпапки источника."""
     db = _db_opt(db_dir, 'video')
     if not db:
         return {'fixed': 0, 'warning': 'video database not found'}
@@ -499,7 +387,6 @@ def fix_video_paths(db_dir):
         for idp, _sp, rec, ufn, nu, ex in rows:
             con.execute('UPDATE path SET scanRecursive=2147483647, useFolderNames=0, noUpdate=0, exclude=0, strHash=NULL WHERE idPath=?', [idp])
             fixed += 1
-        # дубль с явным портом :445 при наличии такого же пути без порта только мешает сканеру
         for idp, sp in con.execute("SELECT idPath, strPath FROM path WHERE strPath LIKE '%:445/%'").fetchall():
             twin = sp.replace(':445/', '/', 1)
             if con.execute('SELECT 1 FROM path WHERE strPath=?', (twin,)).fetchone():
@@ -525,7 +412,6 @@ def music_sources(xml_path):
 
 
 def fix_music_paths(db_dir, xml_path):
-    """Добавляет строки в MyMusic*.db.path: AudioLibrary.Scan без directory сканирует именно их."""
     srcs = music_sources(xml_path)
     db = _db_opt(db_dir, 'music')
     if not db:
@@ -536,7 +422,6 @@ def fix_music_paths(db_dir, xml_path):
         cols = _cols(con, 'path')
         if 'strPath' not in cols:
             return {'added': 0, 'sources': len(srcs)}
-        # старые строки с логином/паролем в адресе больше не нужны: Kodi берёт их из passwords.xml
         for idp, sp in con.execute('SELECT idPath, strPath FROM path').fetchall():
             if split_auth(sp or '')[1]:
                 con.execute('DELETE FROM path WHERE idPath=?', (idp,))
@@ -562,65 +447,6 @@ def video_content_map(db_dir):
         con.close()
 
 
-def debug_info(db_dir):
-    out = {'video': [], 'music': []}
-    for kind, key in (('video', 'video'), ('music', 'music')):
-        db = _db_opt(db_dir, kind)
-        if not db:
-            out[key] = {'error': 'db not found'}
-            continue
-        con = _db_connect(db)
-        try:
-            cols = _cols(con, 'path')
-            rows = con.execute('SELECT * FROM path').fetchall()
-            out[key] = {'db': os.path.basename(db), 'cols': cols, 'rows': [list(r) for r in rows]}
-        finally:
-            con.close()
-    # tail of kodi.log via xbmcvfs (special:// path)
-    tail = None
-    try:
-        import xbmcvfs
-        f = xbmcvfs.File('special://logpath/kodi.log')
-        size = f.size()
-        toread = min(size, 200000)
-        if size > toread:
-            f.seek(size - toread, 0)
-        data = f.readBytes(toread)
-        f.close()
-        tail = data.decode('utf-8', 'replace') if isinstance(data, (bytes, bytearray)) else str(data)
-        out['log_via'] = 'xbmcvfs'
-        out['log_size'] = size
-    except Exception as e:
-        out['log_vfs_error'] = str(e)
-    # fallback: os path
-    if not tail:
-        try:
-            import xbmc
-            logp = xbmc.translatePath('special://logpath/kodi.log')
-            out['log_path'] = logp
-            if logp and os.path.exists(logp):
-                with open(logp, 'rb') as fh:
-                    fh.seek(0, 2)
-                    size = fh.tell()
-                    fh.seek(max(0, size - 200000))
-                    tail = fh.read().decode('utf-8', 'replace')
-                    out['log_via'] = 'os'
-                    out['log_size'] = size
-        except Exception as e:
-            out['log_os_error'] = str(e)
-    if tail:
-        out['log_tail'] = tail
-
-    # internet check
-    try:
-        import urllib.request
-        r = urllib.request.urlopen('http://www.google.com/generate_204', timeout=8)
-        out['internet'] = 'ok (google ' + str(r.getcode()) + ')'
-    except Exception as e:
-        out['internet'] = 'FAIL: ' + str(e)
-    return out
-
-
 def lib_fix(db_dir, xml_path, passwords_path, kind=''):
     res = {'sources': sources_sanitize(xml_path, passwords_path)}
     if kind in ('', 'video'):
@@ -628,7 +454,9 @@ def lib_fix(db_dir, xml_path, passwords_path, kind=''):
     if kind in ('', 'music'):
         res['music'] = fix_music_paths(db_dir, xml_path)
     return res
-    """Полностью очищает таблицы path в БД (видео и/или музыка) — чистый лист. Файлы на шарах не трогает."""
+
+
+def lib_reset(db_dir, kind=''):
     out = {}
     kinds = ['video', 'music'] if kind in ('', 'all') else [kind]
     for k in kinds:
@@ -646,6 +474,9 @@ def lib_fix(db_dir, xml_path, passwords_path, kind=''):
         finally:
             con.close()
     return out
+
+
+def debug_info(db_dir):
     out = {'video': [], 'music': []}
     for kind, key in (('video', 'video'), ('music', 'music')):
         db = _db_opt(db_dir, kind)
@@ -659,37 +490,71 @@ def lib_fix(db_dir, xml_path, passwords_path, kind=''):
             out[key] = {'db': os.path.basename(db), 'cols': cols, 'rows': [list(r) for r in rows]}
         finally:
             con.close()
-    # tail of kodi.log
+    # tail of kodi.log via xbmcvfs
+    tail = None
+    try:
+        import xbmcvfs
+        f = xbmcvfs.File('special://logpath/kodi.log')
+        size = f.size()
+        toread = min(size, 200000)
+        if size > toread:
+            f.seek(size - toread, 0)
+        data = f.readBytes(toread)
+        f.close()
+        tail = data.decode('utf-8', 'replace') if isinstance(data, (bytes, bytearray)) else str(data)
+        out['log_via'] = 'xbmcvfs'
+        out['log_size'] = size
+    except Exception as e:
+        out['log_vfs_error'] = str(e)
+    if not tail:
+        try:
+            import xbmc
+            logp = xbmc.translatePath('special://logpath/kodi.log')
+            out['log_path'] = logp
+            if logp and os.path.exists(logp):
+                with open(logp, 'rb') as fh:
+                    fh.seek(0, 2)
+                    size = fh.tell()
+                    fh.seek(max(0, size - 200000))
+                    tail = fh.read().decode('utf-8', 'replace')
+                    out['log_via'] = 'os'
+                    out['log_size'] = size
+        except Exception as e:
+            out['log_os_error'] = str(e)
+    if tail:
+        out['log_tail'] = tail
+    # sources.xml content
     try:
         import xbmc
-        logp = xbmc.translatePath('special://logpath/kodi.log')
-    except Exception:
-        logp = None
-    if logp and os.path.exists(logp):
-        try:
-            with open(logp, 'rb') as f:
-                f.seek(0, 2)
-                size = f.tell()
-                f.seek(max(0, size - 200000))
-                out['log_tail'] = f.read().decode('utf-8', 'replace')
-        except Exception as e:
-            out['log_error'] = str(e)
+        sx = xbmc.translatePath('special://profile/sources.xml')
+        if os.path.exists(sx):
+            with open(sx) as f:
+                out['sources_xml'] = f.read()
+    except Exception as e:
+        out['sources_error'] = str(e)
+    # passwords.xml content
+    try:
+        import xbmc
+        pwx = xbmc.translatePath('special://profile/passwords.xml')
+        if os.path.exists(pwx):
+            with open(pwx) as f:
+                out['passwords_xml'] = f.read()
+    except Exception as e:
+        out['passwords_error'] = str(e)
+    # internet check
+    try:
+        import urllib.request
+        r = urllib.request.urlopen('http://www.google.com/generate_204', timeout=8)
+        out['internet'] = 'ok (google ' + str(r.getcode()) + ')'
+    except Exception as e:
+        out['internet'] = 'FAIL: ' + str(e)
     return out
 
 
 def lib_wipe(db_dir, kind):
-    """Стирает данные библиотеки (видео или музыки), оставляя структуру БД.
-
-    Для видео в таблице path сохраняются строки с заданным «содержимым» (тип фильмы/сериалы, скрапер, настройки):
-    без них Kodi не сканирует источник. У этих строк сбрасывается хэш, чтобы папки пересканировались.
-    Копия базы кладётся рядом: *.YYYYmmdd-HHMMSS.glassbak.
-    """
     import shutil
     import time
-    try:
-        import sqlite3
-    except ImportError:
-        raise OpError('sqlite3 is not available in this Kodi build')
+    import sqlite3
     if kind not in ('video', 'music'):
         raise OpError('bad kind')
     db = _db_file(db_dir, kind)
@@ -713,7 +578,6 @@ def lib_wipe(db_dir, kind):
             con.execute("DELETE FROM path WHERE strContent IS NULL OR strContent = ''")
             cols = _cols(con, 'path')
             sets = [c + '=NULL' for c in ('strHash', 'idParentPath') if c in cols]
-            # без scanRecursive>0 Kodi не рекурсирует в подпапки источника
             for c, v in (('scanRecursive', '2147483647'), ('useFolderNames', '0'), ('noUpdate', '0'), ('exclude', '0')):
                 if c in cols:
                     sets.append('%s=%s' % (c, v))
@@ -725,7 +589,7 @@ def lib_wipe(db_dir, kind):
         con.commit()
         try:
             con.execute('VACUUM')
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
     except Exception:
         con.rollback()
@@ -736,7 +600,6 @@ def lib_wipe(db_dir, kind):
 
 
 def video_restore_content(db_dir):
-    """Возвращает тип содержимого и скрапер источников из копий *.glassbak (если очистка прошла старой версией)."""
     import glob
     import sqlite3
     db = _db_file(db_dir, 'video')
