@@ -497,7 +497,7 @@ def fix_video_paths(db_dir):
         rows = con.execute("SELECT idPath, strPath, scanRecursive, useFolderNames, noUpdate, exclude FROM path "
                            "WHERE strContent IS NOT NULL AND strContent != ''").fetchall()
         for idp, _sp, rec, ufn, nu, ex in rows:
-            con.execute('UPDATE path SET scanRecursive=2147483647, useFolderNames=0, noUpdate=0, exclude=0 WHERE idPath=?', [idp])
+            con.execute('UPDATE path SET scanRecursive=2147483647, useFolderNames=0, noUpdate=0, exclude=0, strHash=NULL WHERE idPath=?', [idp])
             fixed += 1
         # дубль с явным портом :445 при наличии такого же пути без порта только мешает сканеру
         for idp, sp in con.execute("SELECT idPath, strPath FROM path WHERE strPath LIKE '%:445/%'").fetchall():
