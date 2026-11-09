@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="repository.glasscontrol" name="Glass Control Repository" version="1.0.0" provider-name="Glass">
+  <extension point="xbmc.addon.repository" name="Glass Control">
+    <dir>
+      <info compressed="false">@BASE_URL@/addons.xml</info>
+      <checksum>@BASE_URL@/addons.xml.md5</checksum>
+      <datadir zip="true">@BASE_URL@/zips/</datadir>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Glass Control add-ons</summary>
+    <description lang="en_GB">Updates for the Glass Control web interface, backend service and skin patch.</description>
+    <platform>all</platform>
+  </extension>
+</addon>

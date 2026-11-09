@@ -1,0 +1,6 @@
+dist/
+*.zip
+__pycache__/
+*.pyc
+*.glassbak
+.DS_Store

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="script.glassnp.patcher" name="Mimic-LR Glass Now Playing" version="1.0.0" provider-name="Claude">
+	<requires>
+		<import addon="xbmc.python" version="3.0.1" />
+	</requires>
+	<extension point="xbmc.python.script" library="default.py">
+		<provides>executable</provides>
+	</extension>
+	<extension point="xbmc.service" library="service.py" start="startup" />
+	<extension point="xbmc.addon.metadata">
+		<summary lang="ru_RU">Стеклянный вид воспроизведения для Mimic-LR</summary>
+		<summary lang="en_GB">Glass Now Playing view for Mimic-LR</summary>
+		<description lang="ru_RU">Добавляет в обложку Mimic-LR (Kodi 21) новый вид полноэкранного воспроизведения музыки: стекло, скруглённые углы, блики, внизу эквалайзер. Запуск: Дополнения → Программы → Mimic-LR Glass Now Playing.</description>
+		<description lang="en_GB">Adds a glass-style full-screen music view to the Mimic-LR skin (Kodi 21). Run it from Add-ons → Program add-ons.</description>
+		<platform>all</platform>
+		<license>MIT</license>
+		<assets>
+			<icon>resources/icon.png</icon>
+		</assets>
+	</extension>
+</addon>
