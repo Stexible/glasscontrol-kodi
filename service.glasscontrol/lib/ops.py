@@ -562,7 +562,34 @@ def video_content_map(db_dir):
         con.close()
 
 
-def debug_info(db_dir):
+def lib_fix(db_dir, xml_path, passwords_path, kind=''):
+    res = {'sources': sources_sanitize(xml_path, passwords_path)}
+    if kind in ('', 'video'):
+        res['video'] = fix_video_paths(db_dir)
+    if kind in ('', 'music'):
+        res['music'] = fix_music_paths(db_dir, xml_path)
+    return res
+
+
+def lib_reset(db_dir, kind=''):
+    """Полностью очищает таблицы path в БД (видео и/или музыка) — чистый лист. Файлы на шарах не трогает."""
+    out = {}
+    kinds = ['video', 'music'] if kind in ('', 'all') else [kind]
+    for k in kinds:
+        if k not in ('video', 'music'):
+            continue
+        db = _db_opt(db_dir, k)
+        if not db:
+            out[k] = {'error': 'db not found'}
+            continue
+        con = _db_connect(db)
+        try:
+            con.execute('DELETE FROM path')
+            con.commit()
+            out[k] = {'ok': True}
+        finally:
+            con.close()
+    return out
     out = {'video': [], 'music': []}
     for kind, key in (('video', 'video'), ('music', 'music')):
         db = _db_opt(db_dir, kind)

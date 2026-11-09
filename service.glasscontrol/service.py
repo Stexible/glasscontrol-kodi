@@ -114,6 +114,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, ops.set_video_content(db_dir(), d['path'], d.get('content', '')))
             if path == '/api/lib/fix':
                 return self._send(200, ops.lib_fix(db_dir(), sources_xml(), passwords_xml(), d.get('kind', '')))
+            if path == '/api/lib/reset':
+                return self._send(200, ops.lib_reset(db_dir(), d.get('kind', '')))
             if path == '/api/debug':
                 return self._send(200, ops.debug_info(db_dir()))
             if path == '/api/lib/wipe':
