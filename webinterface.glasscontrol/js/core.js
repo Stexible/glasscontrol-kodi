@@ -284,7 +284,7 @@
     return new Promise(function (res) {
       K.ui.modal({
         title: o.title || t('Подтверждение'), body: html`<p class="pre">${msg}</p>`, cls: 'sm',
-        actions: [{ label: t('Отмена'), value: false }, { label: o.ok || t('Да'), cls: o.danger ? 'danger' : 'primary', value: true }],
+        actions: [{ label: o.cancel || t('Отмена'), value: false }, { label: o.ok || t('Да'), cls: o.danger ? 'danger' : 'primary', value: true }],
         onClose: function (v) { res(!!v); }
       });
     });

@@ -143,20 +143,28 @@
 
   /* ---------- источники ---------- */
   var MEDIA_NAME = { video: 'Видео', music: 'Музыка', pictures: 'Фото', files: 'Файлы', programs: 'Программы' };
+  var CONTENT_NAME = { movies: 'Фильмы', tvshows: 'Сериалы', musicvideos: 'Музыкальные видео', none: 'Не задавать' };
+  function ckey(p) { return String(p || '').replace(/[\\/]+$/, '').toLowerCase(); }
   K.acts.srcs = function (el) { return K.sourcesDialog(el.dataset.v); };
   K.sourcesDialog = function (media) {
     media = media === 'video' || media === 'music' || media === 'pictures' ? media : 'files';
-    return K.be.init().then(function () { return K.rpc('Files.GetSources', { media: media }); }).then(function (r) {
+    return K.be.init().then(function () {
+      var extra = (K.be.ok && media === 'video') ? K.be.call('/api/sources/list', { media: media }).catch(function () { return {}; }) : Promise.resolve({});
+      return Promise.all([K.rpc('Files.GetSources', { media: media }), extra]);
+    }).then(function (rr) {
+      var r = rr[0], cmap = (rr[1] && rr[1].content) || {};
       var src = r.sources || [], lib = media === 'music' ? 'music' : media === 'video' ? 'video' : '';
       var m = K.ui.modal({ title: t('Источники') + ': ' + t(MEDIA_NAME[media]), cls: 'wide', body: html`
         ${K.be.ok ? '' : K.be.hint()}
         <div class="glass panel list" style="padding:6px;margin-bottom:14px">${src.length ? src.map(function (s) {
-          return K.ui.row({ icon: 'folder', img: '', title: s.label, sub: s.file, right: html`<span class="srcrow-a">${lib ? html`<button class="icon-btn" data-act="srcscan" data-v="${lib}" data-p="${s.file}" title="${t('Обновить')}">${ic('refresh', 18)}</button>` : ''}<button class="icon-btn" data-act="srcdel" data-m="${media}" data-n="${s.label}" data-p="${s.file}" title="${t('Удалить источник')}">${ic('trash', 18)}</button></span>` }); }) : K.ui.empty('folder', t('Источники не настроены'))}</div>
+          var ct = cmap[ckey(s.file)] || 'none';
+          return K.ui.row({ icon: 'folder', img: '', title: s.label, sub: s.file, right: html`<span class="srcrow-a">${lib ? html`<button class="icon-btn" data-act="srcscan" data-v="${lib}" data-p="${s.file}" title="${t('Обновить')}">${ic('refresh', 18)}</button>` : ''}${media === 'video' && K.be.ok ? html`<button class="icon-btn" data-act="srccontent" data-p="${s.file}" data-c="${ct}" title="${t('Тип содержимого')}: ${t(CONTENT_NAME[ct] || CONTENT_NAME.none)}">${ic('film', 18)}</button>` : ''}<button class="icon-btn" data-act="srcdel" data-m="${media}" data-n="${s.label}" data-p="${s.file}" title="${t('Удалить источник')}">${ic('trash', 18)}</button></span>` }); }) : K.ui.empty('folder', t('Источники не настроены'))}</div>
         ${K.be.ok ? html`<h3 class="ph3">${t('Добавить источник')}</h3>
           <label class="field"><span>${t('Название')}</span><input class="inp" id="sn" type="text"></label>
           <label class="field" style="margin-top:10px"><span>${t('Путь (папка, smb://, nfs://, http://…)')}</span><div class="grp"><input class="inp" id="sp" type="text" placeholder="/storage/emulated/0/Movies/"><button class="btn" data-act="srcpick">${ic('folder', 16)} ${t('Обзор')}</button></div></label>
+          ${media === 'video' ? html`<label class="field" style="margin-top:10px"><span>${t('Тип содержимого')}</span>${K.ui.select([['movies', t('Фильмы')], ['tvshows', t('Сериалы')], ['musicvideos', t('Музыкальные видео')], ['none', t('Не задавать')]], 'movies', 'id="sc"')}</label>` : ''}
           <div class="btns" style="margin-top:14px"><button class="btn primary" data-act="srcadd" data-m="${media}">${ic('plus', 16)} ${t('Добавить')}</button></div>
-          <p class="note">${lib === 'video' ? t('Для видео-источника после добавления задайте «Тип содержимого» (фильмы/сериалы) в Kodi: Видео → Файлы → источник → «Задать содержимое».') : ''} ${t('Kodi читает список источников при запуске: после изменения перезапустите Kodi.')}</p>` : ''}`, actions: [{ label: t('Закрыть') }] });
+          <p class="note">${media === 'video' ? t('Для фильмов и сериалов Glass Control сам задаст скрапер и включит обход подпапок источника. Тип можно изменить кнопкой с плёнкой у источника.') : ''} ${media === 'music' ? t('Каждая добавленная папка становится отдельным музыкальным источником.') : ''} ${t('Kodi читает список источников при запуске: после изменения перезапустите Kodi.')}</p>` : ''}`, actions: [{ label: t('Закрыть') }] });
       K.srcModal = m;
     }).catch(K.err);
   };
@@ -170,15 +178,46 @@
     });
   };
   K.acts.srcadd = function (el) {
+    var media = el.dataset.m;
     var n = $('#sn').value.trim(), p = $('#sp').value.trim();
+    var content = media === 'video' && $('#sc') ? $('#sc').value : '';
     if (!n || !p) return K.toast(t('Укажите название и путь'), 'err');
-    return K.be.call('/api/sources/add', { media: el.dataset.m, name: n, path: p }).then(function () { restartNote(); });
+    return K.be.call('/api/sources/add', { media: media, name: n, path: p, content: content }).then(function (r) {
+      K.toast(t('Источник добавлен'), 'ok');
+      if (r.auth === false) K.toast(t('Не удалось сохранить логин и пароль в passwords.xml'), 'err');
+      var kind = media === 'video' ? 'video' : media === 'music' ? 'music' : '';
+      if (!kind || (kind === 'video' && content === 'none')) { restartNote(); return; }
+      var dir = r.path || p;
+      // новые логины/пароли Kodi подхватит только после перезагрузки профиля — тогда же и сканируем
+      if (r.auth) { restartNote(kind, dir); return; }
+      return K.libUpdate(kind, { directory: dir, clean: false }).then(function () { restartNote(); });
+    }).catch(K.err);
   };
-  function restartNote() {
-    if (K.srcModal) K.srcModal.close();
-    K.ui.confirm(t('Источники изменены. Kodi подхватит изменения после перезапуска (или перезагрузки профиля).'), { ok: t('Перезагрузить профиль'), cancel: t('Позже') }).then(function (y) {
+  K.acts.srccontent = function (el) {
+    var p = el.dataset.p, cur = el.dataset.c || 'none';
+    return K.ui.modal({ title: t('Тип содержимого'), body: html`<label class="field"><span>${t('Тип содержимого')}</span>${K.ui.select([['movies', t('Фильмы')], ['tvshows', t('Сериалы')], ['musicvideos', t('Музыкальные видео')], ['none', t('Не задавать')]], cur, 'id="scc"')}</label>
+      <p class="note">${t('Для фильмов и сериалов Glass Control задаст скрапер и включит обход подпапок источника. «Не задавать» оставляет папку без типа — Kodi не будет добавлять её в медиатеку.')}</p>`,
+      actions: [{ label: t('Отмена') }, { label: t('Сохранить'), cls: 'primary', onclick: function () {
+        var v = $('#scc').value;
+        return K.be.call('/api/sources/content', { path: p, content: v }).then(function () {
+          el.dataset.c = v; el.title = t('Тип содержимого') + ': ' + t(CONTENT_NAME[v] || CONTENT_NAME.none);
+          K.toast(t('Сохранено'), 'ok');
+          if (v !== 'none') K.libUpdate('video', { directory: p, clean: false });
+        }).catch(K.err);
+      } }] });
+  };
+  function restartNote(kind, path) {
+    if (K.srcModal && document.body.contains(K.srcModal.el)) K.srcModal.close();
+    var msg = kind ? t('Источник добавлен. Чтобы Kodi увидел источник и пароль, перезагрузите профиль — сканирование начнётся автоматически.') : t('Источники изменены. Kodi подхватит изменения после перезапуска (или перезагрузки профиля).');
+    K.ui.confirm(msg, { ok: t('Перезагрузить профиль'), cancel: t('Позже') }).then(function (y) {
       if (!y) return;
-      return K.rpc('Profiles.GetCurrentProfile', { properties: ['lockmode'] }).then(function (r) { return K.rpc('Profiles.LoadProfile', { profile: r.label, prompt: false }); }).then(function () { K.toast(t('Профиль перезагружается…'), 'ok'); });
+      if (kind && path) {
+        try { localStorage.setItem('gc.pendingScan', JSON.stringify({ kind: kind, path: path })); } catch (e) { }
+      }
+      return K.rpc('Profiles.GetCurrentProfile', { properties: ['lockmode'] }).then(function (r) { return K.rpc('Profiles.LoadProfile', { profile: r.label, prompt: false }); }).then(function () {
+        K.toast(t('Профиль перезагружается…'), 'ok');
+        if (kind && path && K.runPendingScan) K.runPendingScan();
+      });
     });
   }
   K.acts.srcpick = function () { K.pickDir(function (p) { var i = $('#sp'); if (i) i.value = p; }); };
@@ -208,7 +247,7 @@
     K.acts.pkauth = function () {
       var pick = cur; K.ui.modal({ title: t('Доступ к сетевой папке'), body: html`<label class="field"><span>${t('Логин')}</span><input class="inp" id="pku" type="text" autocomplete="off"></label>
         <label class="field" style="margin-top:10px"><span>${t('Пароль')}</span><input class="inp" id="pkp" type="password" autocomplete="off"></label>
-        <p class="note">${t('Логин и пароль подставляются в адрес источника (smb://логин:пароль@сервер/…) и сохраняются в sources.xml на устройстве. Пароль передаётся только вашему Kodi.')}</p>`,
+        <p class="note">${t('Логин и пароль сохраняются в passwords.xml на устройстве, а в sources.xml остаётся чистый путь без логина и пароля. Пароль передаётся только вашему Kodi.')}</p>`,
         actions: [{ label: t('Отмена') }, { label: t('Войти'), cls: 'primary', onclick: function () { cur = withAuth(pick, $('#pku').value.trim(), $('#pkp').value); render(); } }] });
     };
     m = K.ui.modal({ title: t('Выбор папки'), cls: 'wide', body: html`<div id="pkbox">${K.ui.loading()}</div>`, actions: [{ label: t('Отмена') }, { label: t('Выбрать эту папку'), cls: 'primary', onclick: function () { cb(cur); } }] });

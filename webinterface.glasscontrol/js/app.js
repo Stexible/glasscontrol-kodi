@@ -162,13 +162,44 @@
     });
   }
   /* Быстрое обновление: сканирование находит только новые/изменённые файлы (ничего не пересоздаётся), затем чистка убирает записи о пропавших */
-  K.libUpdate = function (kind, o) {
+  function libUpdate0(kind, o) {
     o = o || {}; var V = kind === 'video', lib = V ? 'VideoLibrary.' : 'AudioLibrary.', sp = { showdialogs: false };
     if (o.directory) sp.directory = o.directory;
     S.job = 'scan';
     return K.rpc(lib + 'Scan', sp).then(function () { K.toast(t('Сканирование запущено'), 'ok'); setTimeout(poll, 600); return o.clean === false ? null : new Promise(function (r) { setTimeout(r, 1500); }).then(function () { return idle(kind); }); })
       .then(function () { if (o.clean === false) return; S.job = 'clean'; var cp = { showdialogs: false }; if (V && o.content) cp.content = o.content; return K.rpc(lib + 'Clean', cp).then(function () { setTimeout(poll, 600); return new Promise(function (r) { setTimeout(r, 1500); }).then(function () { return idle(kind); }); }); })
       .then(function () { if (o.clean !== false) K.toast(t('Обновление медиатеки завершено'), 'ok'); K.emit('library'); }).catch(K.err);
+  }
+  /* перед обновлением чиним источники и базу: без этого Kodi не видит новые папки и не рекурсирует в подпапки */
+  K.libUpdate = function (kind, o) {
+    return K.be.init().then(function () {
+      if (!K.be.ok) return null;
+      return K.be.call('/api/lib/fix', { kind: kind }).catch(function () { return null; });
+    }).then(function () { return libUpdate0(kind, o); });
+  };
+  /* после добавления источника с новым паролем профиль перезагружается: дожидаемся Kodi и запускаем отложенное сканирование */
+  var pendingBusy = false;
+  K.runPendingScan = function () {
+    if (pendingBusy) return;
+    var s = null;
+    try { s = JSON.parse(localStorage.getItem('gc.pendingScan') || 'null'); } catch (e) { }
+    if (!s || !s.kind || !s.path) return;
+    pendingBusy = true;
+    var n = 0;
+    (function tick() {
+      setTimeout(function () {
+        K.rpc('JSONRPC.Ping').then(function () {
+          try { localStorage.removeItem('gc.pendingScan'); } catch (e) { }
+          pendingBusy = false;
+          K.toast(t('Сканирование добавленного источника'), 'ok');
+          // после перезагрузки профиля у службы новый токен: обновляем подключение к серверной части
+          var ready = (K.be && K.be.retry) ? K.be.retry().catch(function () { return false; }) : Promise.resolve(false);
+          ready.then(function () { K.libUpdate(s.kind, { directory: s.path, clean: false }); });
+        }, function () {
+          if (++n < 80) tick(); else pendingBusy = false;
+        });
+      }, n === 0 ? 3000 : 1500);
+    })();
   };
   K.libClean = function (kind, content) {
     var V = kind === 'video', p = { showdialogs: false }; if (V && content) p.content = content;
@@ -222,7 +253,7 @@
     K.rpc('XBMC.GetInfoBooleans', { booleans: ['Pvr.HasTVChannels', 'Pvr.HasRadioChannels'] }).then(function (b) {
       K.st.nopvr = !(b['Pvr.HasTVChannels'] || b['Pvr.HasRadioChannels']); drawNav();
     }).catch(function () { K.st.nopvr = true; });
-    if (K.be) K.be.init();
+    if (K.be) K.be.init().then(function () { K.runPendingScan(); });
     K.route(); K.player.start(); poll();
   };
 })();

@@ -1,5 +1,6 @@
 """Файловые операции и источники. Чистый Python — тестируется вне Kodi."""
 import os
+import re
 import xml.etree.ElementTree as ET
 
 from . import vfs
@@ -142,6 +143,90 @@ def mkdir(path, name):
 # ---------------------------------------------------------------- sources.xml
 MEDIA = ('video', 'music', 'pictures', 'programs', 'files', 'games')
 
+_AUTH_RE = re.compile(r'^([a-z0-9+]+://)([^/@]+)@(.*)$', re.I)
+_URL_RE = re.compile(r'^([a-z0-9+]+)://([^/]*)(?:/([^/]*))?', re.I)
+
+
+def split_auth(path):
+    """URL → (путь без логина/пароля, логин, пароль)."""
+    p = (path or '').strip()
+    m = _AUTH_RE.match(p)
+    if not m:
+        return p, '', ''
+    user, _, pw = m.group(2).partition(':')
+    return m.group(1) + m.group(3), user, pw
+
+
+def share_key(path):
+    """Ключ passwords.xml: scheme://host/share — так его строит CURL::GetShareName (без подпапок и порта)."""
+    clean, _, _ = split_auth(path)
+    m = _URL_RE.match(clean)
+    if not m:
+        return ''
+    scheme, host, share = m.group(1).lower(), m.group(2), m.group(3) or ''
+    if host.startswith('[') and ']' in host:
+        host = host[1:host.index(']')]      # IPv6: [::1]:445 → ::1
+    elif ':' in host:
+        h, _, port = host.rpartition(':')
+        if port.isdigit():
+            host = h                      # host:445 → host
+    return scheme + '://' + host + ('/' + share if share else '/')
+
+
+def _with_auth(clean, user, pw):
+    m = _URL_RE.match(clean or '')
+    if not m:
+        return clean
+    scheme = m.group(1)
+    return scheme + '://' + user + (':' + pw if pw else '') + '@' + clean[len(scheme) + 3:]
+
+
+def _passwords_load(path):
+    if os.path.exists(path):
+        try:
+            root = ET.parse(path).getroot()
+        except ET.ParseError:
+            raise OpError('passwords.xml is damaged')
+        if root.tag == 'passwords':
+            return root
+    return ET.Element('passwords')
+
+
+def _passwords_put(root, clean, auth):
+    key = share_key(clean)
+    if not key:
+        return False
+    for e in list(root.findall('path')):
+        if (e.findtext('from') or '').strip().lower() == key.lower():
+            root.remove(e)
+    e = ET.SubElement(root, 'path')
+    ET.SubElement(e, 'from').text = key
+    ET.SubElement(e, 'to').text = auth
+    return True
+
+
+def passwords_upsert(path, clean, auth):
+    root = _passwords_load(path)
+    ok = _passwords_put(root, clean, auth)
+    if ok:
+        _save(root, path)
+    return ok
+
+
+def passwords_remove(path, clean):
+    if not os.path.exists(path):
+        return False
+    root = _passwords_load(path)
+    key = share_key(clean).lower()
+    n = 0
+    for e in list(root.findall('path')):
+        if (e.findtext('from') or '').strip().lower() == key:
+            root.remove(e)
+            n += 1
+    if n:
+        _save(root, path)
+    return bool(n)
+
 
 def _load(path):
     if os.path.exists(path):
@@ -166,11 +251,18 @@ def sources_list(xml_path, media):
     return out
 
 
-def sources_add(xml_path, media, name, path):
+def sources_add(xml_path, media, name, path, passwords_path=''):
     if media not in MEDIA:
         raise OpError('bad media')
     if not name or not path:
         raise OpError('name and path required')
+    clean, user, pw = split_auth(path)
+    if not clean:
+        raise OpError('bad path')
+    if user and not passwords_path:
+        raise OpError('passwords.xml path required')
+    if not clean.endswith(('/', '\\')):
+        clean += vfs.sep_of(clean)
     root = _load(xml_path)
     sec = root.find(media)
     if sec is None:
@@ -179,20 +271,21 @@ def sources_add(xml_path, media, name, path):
     for s in sec.findall('source'):
         if s.findtext('name') == name:
             raise OpError('source with this name exists')
-    if not path.endswith(('/', '\\')):
-        path += vfs.sep_of(path)
     s = ET.SubElement(sec, 'source')
     ET.SubElement(s, 'name').text = name
     p = ET.SubElement(s, 'path')
     p.set('pathversion', '1')
-    p.text = path
+    p.text = clean
     ET.SubElement(s, 'allowsharing').text = 'true'
     _save(root, xml_path)
-    return {'restart': True}
+    auth = False
+    if user:
+        # Kodi не использует логин/пароль из sources.xml — только из passwords.xml
+        auth = passwords_upsert(passwords_path, clean, _with_auth(clean, user, pw))
+    return {'restart': True, 'path': clean, 'auth': auth}
 
 
 def _norm(p):
-    import re
     return re.sub(r'^([a-z0-9+]+://)[^@/]*@', r'\1', (p or '').strip()).rstrip('/\\').lower()
 
 
@@ -201,18 +294,20 @@ def _nn(x):
     return ''.join(c for c in (x or '').lower() if c.isalnum())
 
 
-def sources_remove(xml_path, media, name, path=''):
+def sources_remove(xml_path, media, name, path='', passwords_path=''):
     """Удаляет источник по имени, иначе по пути; ищет сначала в нужном разделе, затем во всех."""
     root = _load(xml_path)
     secs = [root.find(media)] + [root.find(m) for m in MEDIA if m != media]
     secs = [x for x in secs if x is not None]
     want = _norm(path)
+    removed = []
     n = 0
     for sec in secs:
         for s in list(sec.findall('source')):
             same_name = _nn(s.findtext('name')) == _nn(name)
             same_path = bool(want) and any(_norm(p.text) == want for p in s.findall('path'))
             if same_name or same_path:
+                removed += [p.text or '' for p in s.findall('path')]
                 sec.remove(s)
                 n += 1
         if n:
@@ -221,7 +316,38 @@ def sources_remove(xml_path, media, name, path=''):
         have = ['%s: %s' % (sec.tag, (s.findtext('name') or '?')) for sec in root for s in sec.findall('source')]
         return {'restart': True, 'already': True, 'looked_for': name, 'have': have}
     _save(root, xml_path)
+    if passwords_path and removed:
+        # пароль в passwords.xml общий на шару: не трогаем, если на ней остались другие источники
+        left = set(share_key(p.text or '') for sec in root for s in sec.findall('source') for p in s.findall('path'))
+        for p in removed:
+            k = share_key(p)
+            if k and k not in left:
+                passwords_remove(passwords_path, p)
     return {'restart': True}
+
+
+def sources_sanitize(xml_path, passwords_path):
+    """Переносит логины/пароли из sources.xml в passwords.xml (Kodi читает их только оттуда)."""
+    if not passwords_path:
+        return {'moved': 0}
+    root = _load(xml_path)
+    proot = _passwords_load(passwords_path)
+    moved = 0
+    for sec in root:
+        for s in sec.findall('source'):
+            for p in s.findall('path'):
+                clean, user, pw = split_auth(p.text or '')
+                if not user:
+                    continue
+                if not clean.endswith(('/', '\\')):
+                    clean += vfs.sep_of(clean)
+                p.text = clean
+                if _passwords_put(proot, clean, _with_auth(clean, user, pw)):
+                    moved += 1
+    if moved:
+        _save(root, xml_path)
+        _save(proot, passwords_path)
+    return {'moved': moved}
 
 
 def _save(root, xml_path):
@@ -272,12 +398,12 @@ BUILTIN_OK = ('InstallAddon(', 'UpdateAddonRepos', 'UpdateLocalAddons', 'Activat
 # ---------------------------------------------------------------- полная очистка медиатеки
 def _db_file(db_dir, kind):
     import glob
-    pat = 'MyVideos*.db' if kind == 'video' else 'MyMusic*.db'
+    pat = 'MyVideos' if kind == 'video' else 'MyMusic'
     found = []
-    for f in glob.glob(os.path.join(db_dir, pat)):
-        digits = ''.join(c for c in os.path.basename(f) if c.isdigit())
-        if digits:
-            found.append((int(digits), f))
+    for f in glob.glob(os.path.join(db_dir, pat + '*.db')):
+        m = re.match(r'^' + pat + r'(\d+)\.db$', os.path.basename(f))
+        if m:
+            found.append((int(m.group(1)), f))
     if not found:
         raise OpError('library database not found in ' + db_dir)
     return sorted(found)[-1][1]
@@ -285,6 +411,174 @@ def _db_file(db_dir, kind):
 
 def _cols(con, table, schema='main'):
     return [r[1] for r in con.execute('PRAGMA %s.table_info("%s")' % (schema, table))]
+
+
+# ---------------------------------------------------------------- содержимое источников
+SCRAPERS = {'movies': 'metadata.themoviedb.org.python',
+            'tvshows': 'metadata.tvshows.themoviedb.org.python',
+            'musicvideos': 'metadata.local'}
+
+
+def _db_opt(db_dir, kind):
+    try:
+        return _db_file(db_dir, kind)
+    except OpError:
+        return None
+
+
+def _db_connect(db):
+    import sqlite3
+    con = sqlite3.connect(db, timeout=30)
+    try:
+        con.execute('PRAGMA busy_timeout=30000')
+    except Exception:  # noqa: BLE001
+        pass
+    return con
+
+
+def _norm_path(path):
+    p, _, _ = split_auth(path)
+    p = (p or '').strip()
+    if p and not p.endswith(('/', '\\')):
+        p += vfs.sep_of(p)
+    return p
+
+
+def set_video_content(db_dir, path, content, scraper=''):
+    """Задаёт тип содержимого и скрапер для папки-источника (строка path в MyVideos*.db)."""
+    if content not in ('', 'none', 'movies', 'tvshows', 'musicvideos'):
+        raise OpError('bad content')
+    clean = _norm_path(path)
+    if not clean:
+        raise OpError('empty path')
+    db = _db_opt(db_dir, 'video')
+    if not db:
+        return {'content': False, 'path': clean, 'warning': 'video database not found'}
+    content = '' if content == 'none' else content
+    scraper = (scraper or SCRAPERS.get(content, '')) if content else ''
+    con = _db_connect(db)
+    try:
+        cols = _cols(con, 'path')
+        row = con.execute('SELECT idPath, strSettings FROM path WHERE strPath=?', (clean,)).fetchone()
+        settings = row[1] if row and row[1] else None
+        if content and not settings:
+            s = con.execute("SELECT strSettings FROM path WHERE strContent=? AND strSettings IS NOT NULL "
+                            "AND strSettings != '' LIMIT 1", (content,)).fetchone()
+            settings = s[0] if s else None
+        vals = {'strContent': content, 'strScraper': scraper, 'strHash': None,
+                'scanRecursive': 2147483647, 'useFolderNames': 0, 'noUpdate': 0, 'exclude': 0}
+        if settings is not None:
+            vals['strSettings'] = settings
+        vals = {k: v for k, v in vals.items() if k in cols}
+        if row:
+            con.execute('UPDATE path SET ' + ', '.join(k + '=?' for k in vals) + ' WHERE idPath=?',
+                        list(vals.values()) + [row[0]])
+        else:
+            keys = ['strPath'] + list(vals)
+            con.execute('INSERT INTO path (%s) VALUES (%s)' % (','.join(keys), ','.join('?' * len(keys))),
+                        [clean] + list(vals.values()))
+        con.commit()
+    finally:
+        con.close()
+    return {'content': True, 'path': clean, 'scraper': scraper}
+
+
+def fix_video_paths(db_dir):
+    """Чинит строки path: без scanRecursive>0 Kodi не заходит в подпапки источника."""
+    db = _db_opt(db_dir, 'video')
+    if not db:
+        return {'fixed': 0, 'warning': 'video database not found'}
+    con = _db_connect(db)
+    fixed = disabled = 0
+    try:
+        cols = _cols(con, 'path')
+        if 'strContent' not in cols or 'scanRecursive' not in cols:
+            return {'fixed': 0}
+        rows = con.execute("SELECT idPath, strPath, scanRecursive, useFolderNames, noUpdate, exclude FROM path "
+                           "WHERE strContent IS NOT NULL AND strContent != ''").fetchall()
+        for idp, _sp, rec, ufn, nu, ex in rows:
+            sets = []
+            if rec is None or rec <= 0:
+                sets.append('scanRecursive=2147483647')
+            if ufn is None:
+                sets.append('useFolderNames=0')
+            if nu is None:
+                sets.append('noUpdate=0')
+            if ex is None:
+                sets.append('exclude=0')
+            if sets:
+                con.execute('UPDATE path SET ' + ', '.join(sets) + ' WHERE idPath=?', [idp])
+                fixed += 1
+        # дубль с явным портом :445 при наличии такого же пути без порта только мешает сканеру
+        for idp, sp in con.execute("SELECT idPath, strPath FROM path WHERE strPath LIKE '%:445/%'").fetchall():
+            twin = sp.replace(':445/', '/', 1)
+            if con.execute('SELECT 1 FROM path WHERE strPath=?', (twin,)).fetchone():
+                con.execute('UPDATE path SET exclude=1 WHERE idPath=?', (idp,))
+                disabled += 1
+        con.commit()
+    finally:
+        con.close()
+    return {'fixed': fixed, 'disabled': disabled}
+
+
+def music_sources(xml_path):
+    root = _load(xml_path)
+    out = []
+    sec = root.find('music')
+    if sec is not None:
+        for s in sec.findall('source'):
+            for p in s.findall('path'):
+                c = _norm_path(p.text or '')
+                if c and c not in out:
+                    out.append(c)
+    return out
+
+
+def fix_music_paths(db_dir, xml_path):
+    """Добавляет строки в MyMusic*.db.path: AudioLibrary.Scan без directory сканирует именно их."""
+    srcs = music_sources(xml_path)
+    db = _db_opt(db_dir, 'music')
+    if not db:
+        return {'added': 0, 'sources': len(srcs), 'warning': 'music database not found'}
+    con = _db_connect(db)
+    added = 0
+    try:
+        cols = _cols(con, 'path')
+        if 'strPath' not in cols:
+            return {'added': 0, 'sources': len(srcs)}
+        # старые строки с логином/паролем в адресе больше не нужны: Kodi берёт их из passwords.xml
+        for idp, sp in con.execute('SELECT idPath, strPath FROM path').fetchall():
+            if split_auth(sp or '')[1]:
+                con.execute('DELETE FROM path WHERE idPath=?', (idp,))
+        for p in srcs:
+            if not con.execute('SELECT 1 FROM path WHERE strPath=?', (p,)).fetchone():
+                con.execute('INSERT INTO path (strPath, strHash) VALUES (?, NULL)', (p,))
+                added += 1
+        con.commit()
+    finally:
+        con.close()
+    return {'added': added, 'sources': len(srcs)}
+
+
+def video_content_map(db_dir):
+    db = _db_opt(db_dir, 'video')
+    if not db:
+        return {}
+    con = _db_connect(db)
+    try:
+        return {sp.rstrip('/').lower(): (sc or '') for sp, sc in con.execute(
+            "SELECT strPath, strContent FROM path WHERE strContent IS NOT NULL AND strContent != ''")}
+    finally:
+        con.close()
+
+
+def lib_fix(db_dir, xml_path, passwords_path, kind=''):
+    res = {'sources': sources_sanitize(xml_path, passwords_path)}
+    if kind in ('', 'video'):
+        res['video'] = fix_video_paths(db_dir)
+    if kind in ('', 'music'):
+        res['music'] = fix_music_paths(db_dir, xml_path)
+    return res
 
 
 def lib_wipe(db_dir, kind):
@@ -323,6 +617,10 @@ def lib_wipe(db_dir, kind):
             con.execute("DELETE FROM path WHERE strContent IS NULL OR strContent = ''")
             cols = _cols(con, 'path')
             sets = [c + '=NULL' for c in ('strHash', 'idParentPath') if c in cols]
+            # без scanRecursive>0 Kodi не рекурсирует в подпапки источника
+            for c, v in (('scanRecursive', '2147483647'), ('useFolderNames', '0'), ('noUpdate', '0'), ('exclude', '0')):
+                if c in cols:
+                    sets.append('%s=%s' % (c, v))
             if sets:
                 con.execute('UPDATE path SET ' + ', '.join(sets))
             kept = con.execute('SELECT COUNT(*) FROM path').fetchone()[0]
@@ -352,17 +650,27 @@ def video_restore_content(db_dir):
     con = sqlite3.connect(db, timeout=30)
     restored = 0
     try:
+        con.execute('PRAGMA busy_timeout=30000')
         for b in baks:
             con.execute("ATTACH DATABASE ? AS b", (b,))
             try:
                 cols = [c for c in _cols(con, 'path') if c in _cols(con, 'path', 'b') and c != 'idPath']
-                rows = con.execute("SELECT strPath, strContent, strScraper, strSettings FROM b.path WHERE strContent IS NOT NULL AND strContent != ''").fetchall()
-                for sp, sc, sr, ss in rows:
+                extra = [c for c in ('scanRecursive', 'useFolderNames', 'noUpdate', 'exclude') if c in cols]
+                defaults = {'scanRecursive': 2147483647, 'useFolderNames': 0, 'noUpdate': 0, 'exclude': 0}
+                sel = ['strPath', 'strContent', 'strScraper', 'strSettings'] + extra
+                rows = con.execute('SELECT ' + ', '.join(sel) + " FROM b.path WHERE strContent IS NOT NULL AND strContent != ''").fetchall()
+                for r in rows:
+                    sp, sc, sr, ss = r[:4]
+                    ev = {k: (v if v is not None else defaults[k]) for k, v in zip(extra, r[4:])}
                     cur = con.execute('SELECT idPath FROM main.path WHERE strPath = ?', (sp,)).fetchone()
+                    tail = ''.join(', %s=?' % k for k in ev)
                     if cur:
-                        con.execute('UPDATE main.path SET strContent=?, strScraper=?, strSettings=?, strHash=NULL WHERE idPath=?', (sc, sr, ss, cur[0]))
+                        con.execute('UPDATE main.path SET strContent=?, strScraper=?, strSettings=?, strHash=NULL'
+                                    + tail + ' WHERE idPath=?', [sc, sr, ss] + list(ev.values()) + [cur[0]])
                     else:
-                        con.execute('INSERT INTO main.path (strPath, strContent, strScraper, strSettings) VALUES (?,?,?,?)', (sp, sc, sr, ss))
+                        keys = ['strPath', 'strContent', 'strScraper', 'strSettings'] + list(ev)
+                        con.execute('INSERT INTO main.path (%s) VALUES (%s)' % (','.join(keys), ','.join('?' * len(keys))),
+                                    [sp, sc, sr, ss] + list(ev.values()))
                     restored += 1
             finally:
                 con.commit()

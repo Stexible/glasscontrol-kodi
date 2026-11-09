@@ -24,6 +24,14 @@ def sources_xml():
     return xbmcvfs.translatePath('special://profile/sources.xml')
 
 
+def passwords_xml():
+    return xbmcvfs.translatePath('special://profile/passwords.xml')
+
+
+def db_dir():
+    return xbmcvfs.translatePath('special://database/')
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = 'GlassControl/' + VERSION
 
@@ -88,15 +96,32 @@ class Handler(BaseHTTPRequestHandler):
             if path == '/api/fs/mkdir':
                 return self._send(200, ops.mkdir(d['path'], d['name']))
             if path == '/api/sources/list':
-                return self._send(200, {'sources': ops.sources_list(sources_xml(), d.get('media', 'video'))})
+                res = {'sources': ops.sources_list(sources_xml(), d.get('media', 'video'))}
+                if d.get('media', 'video') == 'video':
+                    res['content'] = ops.video_content_map(db_dir())
+                return self._send(200, res)
             if path == '/api/sources/add':
-                return self._send(200, ops.sources_add(sources_xml(), d['media'], d['name'], d['path']))
+                res = ops.sources_add(sources_xml(), d['media'], d['name'], d['path'], passwords_xml())
+                content = d.get('content') or ''
+                if d['media'] == 'video' and content:
+                    res['content'] = ops.set_video_content(db_dir(), res['path'], content)
+                if d['media'] == 'music':
+                    res['music'] = ops.fix_music_paths(db_dir(), sources_xml())
+                return self._send(200, res)
             if path == '/api/sources/remove':
-                return self._send(200, ops.sources_remove(sources_xml(), d['media'], d['name'], d.get('path', '')))
+                return self._send(200, ops.sources_remove(sources_xml(), d['media'], d['name'], d.get('path', ''), passwords_xml()))
+            if path == '/api/sources/content':
+                return self._send(200, ops.set_video_content(db_dir(), d['path'], d.get('content', '')))
+            if path == '/api/lib/fix':
+                return self._send(200, ops.lib_fix(db_dir(), sources_xml(), passwords_xml(), d.get('kind', '')))
             if path == '/api/lib/wipe':
-                return self._send(200, ops.lib_wipe(xbmcvfs.translatePath('special://database/'), d['kind']))
+                res = ops.lib_wipe(db_dir(), d['kind'])
+                res['fix'] = ops.lib_fix(db_dir(), sources_xml(), passwords_xml(), d['kind'])
+                return self._send(200, res)
             if path == '/api/lib/restore':
-                return self._send(200, ops.video_restore_content(xbmcvfs.translatePath('special://database/')))
+                res = ops.video_restore_content(db_dir())
+                res['fix'] = ops.lib_fix(db_dir(), sources_xml(), passwords_xml(), 'video')
+                return self._send(200, res)
             if path == '/api/brightness':
                 if method == 'POST' and 'value' in d:
                     return self._send(200, ops.brightness_set(float(d['value'])))

@@ -412,7 +412,7 @@ K.EN = {
 "Логин": "Login",
 "Пароль": "Password",
 "Войти": "Sign in",
-"Логин и пароль подставляются в адрес источника (smb://логин:пароль@сервер/…) и сохраняются в sources.xml на устройстве. Пароль передаётся только вашему Kodi.": "Login and password are embedded in the source address (smb://user:pass@server/…) and stored in sources.xml on the device. The password is sent only to your Kodi.",
+"Логин и пароль сохраняются в passwords.xml на устройстве, а в sources.xml остаётся чистый путь без логина и пароля. Пароль передаётся только вашему Kodi.": "The login and password are stored in passwords.xml on the device, while sources.xml keeps a clean path without them. The password is sent only to your Kodi.",
 "Источника «{n}» уже нет в sources.xml (удалён ранее) — Kodi показывает его до перезапуска": "Source “{n}” is no longer in sources.xml (removed earlier) — Kodi keeps showing it until restart",
 "Полностью сбросить базу медиатеки, чтобы собрать её заново": "Fully reset the library database to rebuild it from scratch",
 "Для полной очистки медиатеки нужен Glass Control Backend": "Glass Control Backend is required to fully clear the library",
@@ -426,5 +426,16 @@ K.EN = {
 "Нужен Glass Control Backend": "Glass Control Backend is required",
 "Восстановлено источников": "Sources restored",
 "Перезагрузите профиль, затем нажмите «Обновить видео».": "Reload the profile, then press “Update video”.",
-"Полностью очистить медиатеку {n}? Будут стёрты все записи, отметки просмотра, точки возобновления и оценки. Файлы не удаляются; тип содержимого источников (фильмы/сериалы) сохраняется. Копия базы сохранится рядом (*.glassbak). После этого нажмите «Обновить», чтобы собрать медиатеку заново.": "Fully clear the {n} library? All entries, watched marks, resume points and ratings will be erased. Files are not deleted; the source content type (movies/TV) is kept. A copy of the database is kept next to it (*.glassbak). Then press “Update” to rebuild the library."
+"Полностью очистить медиатеку {n}? Будут стёрты все записи, отметки просмотра, точки возобновления и оценки. Файлы не удаляются; тип содержимого источников (фильмы/сериалы) сохраняется. Копия базы сохранится рядом (*.glassbak). После этого нажмите «Обновить», чтобы собрать медиатеку заново.": "Fully clear the {n} library? All entries, watched marks, resume points and ratings will be erased. Files are not deleted; the source content type (movies/TV) is kept. A copy of the database is kept next to it (*.glassbak). Then press “Update” to rebuild the library.",
+"Тип содержимого": "Content type",
+"Музыкальные видео": "Music videos",
+"Не задавать": "Do not set",
+"Источник добавлен": "Source added",
+"Не удалось сохранить логин и пароль в passwords.xml": "Could not save the login and password to passwords.xml",
+"Каждая добавленная папка становится отдельным музыкальным источником.": "Each added folder becomes a separate music source.",
+"Для фильмов и сериалов Glass Control сам задаст скрапер и включит обход подпапок источника. Тип можно изменить кнопкой с плёнкой у источника.": "For movies and TV shows Glass Control sets the scraper and enables recursive scanning of the source. You can change the type with the film button next to the source.",
+"Для фильмов и сериалов Glass Control задаст скрапер и включит обход подпапок источника. «Не задавать» оставляет папку без типа — Kodi не будет добавлять её в медиатеку.": "For movies and TV shows Glass Control sets the scraper and enables recursive scanning of the source. “Do not set” leaves the folder without a type — Kodi will not add it to the library.",
+"Источник добавлен. Чтобы Kodi увидел источник и пароль, перезагрузите профиль — сканирование начнётся автоматически.": "Source added. Reload the profile so Kodi picks up the source and password — scanning will start automatically.",
+"Сканирование добавленного источника": "Scanning the added source",
+"Сохранить": "Save"
 };
