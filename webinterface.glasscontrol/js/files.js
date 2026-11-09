@@ -51,14 +51,17 @@
       <button class="btn sm" data-act="lclean" data-v="${libKind}" title="${t('Полностью сбросить базу медиатеки, чтобы собрать её заново')}">${ic('eraser', 16)} ${t('Очистить')}</button><button class="icon-btn" data-act="srcs" data-v="${media}" aria-label="${t('Источники')}" title="${t('Источники')}">${ic('sliders', 18)}</button></div>`;
     var title = o.title || t('Файлы');
     if (!path) {
-      return K.rpc('Files.GetSources', { media: media }).then(function (r) {
-        if (!ctx.alive()) return; var src = r.sources || [];
+      var srcPromise = K.be.ok ? K.be.call('/api/sources/list', { media: media }).then(function (r) { return (r.sources || []).map(function (s) { return { label: s.name, file: (s.paths && s.paths[0]) || '' }; }); }).catch(function () { return null; }) : Promise.resolve(null);
+      return srcPromise.then(function (beSrc) {
+        return K.rpc('Files.GetSources', { media: media }).then(function (r) {
+          if (!ctx.alive()) return; var src = (beSrc && beSrc.length) ? beSrc : (r.sources || []);
         K.mount(ctx.view, html`${K.ui.head(title, { sub: t('Источники и файловый менеджер'), right: bar })}${o.tabs}
           ${K.be.ok ? '' : ''}<div class="glass panel list" style="padding:8px">${src.length ? src.map(function (s) {
             return K.ui.row({ icon: 'folder', img: '', title: s.label, sub: s.file, href: link(s.file),
               right: html`<span class="srcrow-a"><button class="icon-btn" data-act="srcscan" data-v="${libKind}" data-p="${s.file}" aria-label="${t('Обновить')}" title="${t('Обновить')}">${ic('refresh', 18)}</button><button class="icon-btn" data-act="srcdel" data-m="${media}" data-n="${s.label}" data-p="${s.file}" aria-label="${t('Удалить')}" title="${t('Удалить источник')}">${ic('trash', 18)}</button></span>` }); }) : K.ui.empty('folder', t('Источники не настроены'), t('Добавьте источник кнопкой «⚙» справа вверху'))}</div>
           ${K.ui.sec(t('Быстрый доступ'))}<div class="chips">${SHORT.filter(function (s) { return !s[3] || K.be.ok; }).map(function (s) { return html`<a class="chip" href="${link(s[0])}">${ic(s[2], 16)} ${t(s[1])}</a>`; })}</div>
           ${K.be.ok || !K.be.tried ? '' : K.be.hint()}`);
+      });
       });
     }
     return listDir(path, media, all).then(function (files) {
