@@ -576,41 +576,41 @@ def debug_info(db_dir):
             out[key] = {'db': os.path.basename(db), 'cols': cols, 'rows': [list(r) for r in rows]}
         finally:
             con.close()
-    # tail of kodi.log
-    logp = None
+    # tail of kodi.log via xbmcvfs (special:// path)
+    tail = None
     try:
-        import xbmc
-        logp = xbmc.translatePath('special://logpath/kodi.log')
+        import xbmcvfs
+        f = xbmcvfs.File('special://logpath/kodi.log')
+        size = f.size()
+        toread = min(size, 200000)
+        if size > toread:
+            f.seek(size - toread, 0)
+        data = f.readBytes(toread)
+        f.close()
+        tail = data.decode('utf-8', 'replace') if isinstance(data, (bytes, bytearray)) else str(data)
+        out['log_via'] = 'xbmcvfs'
+        out['log_size'] = size
     except Exception as e:
-        out['log_import_error'] = str(e)
-    if not logp or not os.path.exists(logp):
+        out['log_vfs_error'] = str(e)
+    # fallback: os path
+    if not tail:
         try:
-            import xbmcvfs
-            logp = xbmcvfs.translatePath('special://logpath/kodi.log')
+            import xbmc
+            logp = xbmc.translatePath('special://logpath/kodi.log')
+            out['log_path'] = logp
+            if logp and os.path.exists(logp):
+                with open(logp, 'rb') as fh:
+                    fh.seek(0, 2)
+                    size = fh.tell()
+                    fh.seek(max(0, size - 200000))
+                    tail = fh.read().decode('utf-8', 'replace')
+                    out['log_via'] = 'os'
+                    out['log_size'] = size
         except Exception as e:
-            out['log_vfs_error'] = str(e)
-    out['log_path'] = logp
-    out['log_exists'] = bool(logp and os.path.exists(logp))
-    if logp and os.path.exists(logp):
-        try:
-            with open(logp, 'rb') as f:
-                f.seek(0, 2)
-                size = f.tell()
-                f.seek(max(0, size - 150000))
-                out['log_tail'] = f.read().decode('utf-8', 'replace')
-        except Exception as e:
-            out['log_read_error'] = str(e)
-    else:
-        try:
-            import xbmcvfs
-            f = xbmcvfs.File('special://logpath/kodi.log')
-            size = f.size()
-            data = f.readBytes(min(size, 150000)) if size > 150000 else f.readBytes(size)
-            f.close()
-            out['log_tail'] = (data.decode('utf-8', 'replace') if isinstance(data, (bytes, bytearray)) else str(data))
-            out['log_via'] = 'xbmcvfs'
-        except Exception as e:
-            out['log_vfs_read_error'] = str(e)
+            out['log_os_error'] = str(e)
+    if tail:
+        out['log_tail'] = tail
+
     # internet check
     try:
         import urllib.request
