@@ -436,6 +436,12 @@ K.EN = {
 "Для фильмов и сериалов Glass Control сам задаст скрапер и включит обход подпапок источника. Тип можно изменить кнопкой с плёнкой у источника.": "For movies and TV shows Glass Control sets the scraper and enables recursive scanning of the source. You can change the type with the film button next to the source.",
 "Для фильмов и сериалов Glass Control задаст скрапер и включит обход подпапок источника. «Не задавать» оставляет папку без типа — Kodi не будет добавлять её в медиатеку.": "For movies and TV shows Glass Control sets the scraper and enables recursive scanning of the source. “Do not set” leaves the folder without a type — Kodi will not add it to the library.",
 "Источник добавлен. Чтобы Kodi увидел источник и пароль, перезагрузите профиль — сканирование начнётся автоматически.": "Source added. Reload the profile so Kodi picks up the source and password — scanning will start automatically.",
-"Сканирование добавленного источника": "Scanning the added source",
-"Сохранить": "Save"
+"Сохранить": "Save",
+"Подключено: ": "Connected: ",
+"Подключить": "Connect",
+"Подключить сетевую папку": "Connect network folder",
+"Адрес (smb://host/ или nfs://host/)": "Address (smb://host/ or nfs://host/)",
+"Проверим соединение и подставим путь с логином/паролем в поле «Путь»." : "We'll test the connection and put the path with login/password into the “Path” field.",
+"Укажите адрес": "Enter an address",
+"Неверный адрес": "Invalid address"
 };

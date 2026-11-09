@@ -171,7 +171,7 @@
           return K.ui.row({ icon: 'folder', img: '', title: s.label, sub: s.file, right: html`<span class="srcrow-a">${lib ? html`<button class="icon-btn" data-act="srcscan" data-v="${lib}" data-p="${s.file}" title="${t('Обновить')}">${ic('refresh', 18)}</button>` : ''}${media === 'video' && K.be.ok ? html`<button class="icon-btn" data-act="srccontent" data-p="${s.file}" data-c="${ct}" title="${t('Тип содержимого')}: ${t(CONTENT_NAME[ct] || CONTENT_NAME.none)}">${ic('film', 18)}</button>` : ''}<button class="icon-btn" data-act="srcdel" data-m="${media}" data-n="${s.label}" data-p="${s.file}" title="${t('Удалить источник')}">${ic('trash', 18)}</button></span>` }); }) : K.ui.empty('folder', t('Источники не настроены'))}</div>
         ${K.be.ok ? html`<h3 class="ph3">${t('Добавить источник')}</h3>
           <label class="field"><span>${t('Название')}</span><input class="inp" id="sn" type="text"></label>
-          <label class="field" style="margin-top:10px"><span>${t('Путь (папка, smb://, nfs://, http://…)')}</span><div class="grp"><input class="inp" id="sp" type="text" placeholder="/storage/emulated/0/Movies/"><button class="btn" data-act="srcpick">${ic('folder', 16)} ${t('Обзор')}</button></div></label>
+          <label class="field" style="margin-top:10px"><span>${t('Путь (папка, smb://, nfs://, http://…)')}</span><div class="grp"><input class="inp" id="sp" type="text" placeholder="/storage/emulated/0/Movies/"><button class="btn" data-act="srcpick">${ic('folder', 16)} ${t('Обзор')}</button><button class="btn" data-act="srcnet">${ic('plug', 16)} ${t('Подключить сетевую папку')}</button></div></label>
           ${media === 'video' ? html`<label class="field" style="margin-top:10px"><span>${t('Тип содержимого')}</span>${K.ui.select([['movies', t('Фильмы')], ['tvshows', t('Сериалы')], ['musicvideos', t('Музыкальные видео')], ['none', t('Не задавать')]], 'movies', 'id="sc"')}</label>` : ''}
           <div class="btns" style="margin-top:14px"><button class="btn primary" data-act="srcadd" data-m="${media}">${ic('plus', 16)} ${t('Добавить')}</button></div>
           <p class="note">${media === 'video' ? t('Для фильмов и сериалов Glass Control сам задаст скрапер и включит обход подпапок источника. Тип можно изменить кнопкой с плёнкой у источника.') : ''} ${media === 'music' ? t('Каждая добавленная папка становится отдельным музыкальным источником.') : ''} ${t('Kodi читает список источников при запуске: после изменения перезапустите Kodi.')}</p>` : ''}`, actions: [{ label: t('Закрыть') }] });
@@ -231,6 +231,27 @@
     });
   }
   K.acts.srcpick = function () { K.pickDir(function (p) { var i = $('#sp'); if (i) i.value = p; }); };
+  K.acts.srcnet = function () {
+    var cur = ($('#sp') && $('#sp').value.trim()) || 'smb://192.168.1.70/';
+    var m = cur.match(/^([a-z0-9+]+:\/\/)(?:[^@\/]*@)?(.*)$/i);
+    var host = m ? (m[2].split('/')[0] || '192.168.1.70') : '192.168.1.70';
+    K.ui.modal({ title: t('Подключить сетевую папку'), body: html`
+      <label class="field"><span>${t('Адрес (smb://host/ или nfs://host/)')}</span><input class="inp" id="nk" type="text" value="smb://${host}/"></label>
+      <label class="field" style="margin-top:10px"><span>${t('Логин')}</span><input class="inp" id="nu" type="text" autocomplete="off"></label>
+      <label class="field" style="margin-top:10px"><span>${t('Пароль')}</span><input class="inp" id="np" type="password" autocomplete="off"></label>
+      <p class="note">${t('Проверим соединение и подставим путь с логином/паролем в поле «Путь».')}</p>`,
+      actions: [{ label: t('Отмена') }, { label: t('Подключить'), cls: 'primary', onclick: function () {
+        var k = $('#nk').value.trim(), u = $('#nu').value.trim(), p = $('#np').value;
+        if (!k) return K.toast(t('Укажите адрес'), 'err') || false;
+        var x = k.match(/^([a-z0-9+]+:\/\/)(?:[^@\/]*@)?(.*)$/i); if (!x) return K.toast(t('Неверный адрес'), 'err') || false;
+        var url = x[1] + (u ? encodeURIComponent(u) + (p ? ':' + encodeURIComponent(p) : '') + '@' : '') + x[2];
+        if (!url.endsWith('/')) url += '/';
+        return K.be.call('/api/fs/list', { path: url }).then(function (r) {
+          var i = $('#sp'); if (i) i.value = url;
+          K.toast(t('Подключено: ') + (r.items ? r.items.length : 0) + ' ' + t('элементов'), 'ok');
+        }).catch(function (e) { K.toast((e && e.message) || t('Нет связи'), 'err'); return false; });
+      } }] });
+  };
   /* выбор папки: локально и в сети (smb://, nfs://, upnp://…) через серверную часть; логин и пароль подставляются в адрес */
   K.pickDir = function (cb) {
     var cur = $('#sp') && $('#sp').value.trim() || '/', m, err = '';
