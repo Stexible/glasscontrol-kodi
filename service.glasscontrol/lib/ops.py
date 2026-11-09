@@ -497,18 +497,8 @@ def fix_video_paths(db_dir):
         rows = con.execute("SELECT idPath, strPath, scanRecursive, useFolderNames, noUpdate, exclude FROM path "
                            "WHERE strContent IS NOT NULL AND strContent != ''").fetchall()
         for idp, _sp, rec, ufn, nu, ex in rows:
-            sets = []
-            if rec is None or rec <= 0:
-                sets.append('scanRecursive=2147483647')
-            if ufn is None:
-                sets.append('useFolderNames=0')
-            if nu is None:
-                sets.append('noUpdate=0')
-            if ex is None:
-                sets.append('exclude=0')
-            if sets:
-                con.execute('UPDATE path SET ' + ', '.join(sets) + ' WHERE idPath=?', [idp])
-                fixed += 1
+            con.execute('UPDATE path SET scanRecursive=2147483647, useFolderNames=0, noUpdate=0, exclude=0 WHERE idPath=?', [idp])
+            fixed += 1
         # дубль с явным портом :445 при наличии такого же пути без порта только мешает сканеру
         for idp, sp in con.execute("SELECT idPath, strPath FROM path WHERE strPath LIKE '%:445/%'").fetchall():
             twin = sp.replace(':445/', '/', 1)
@@ -572,13 +562,36 @@ def video_content_map(db_dir):
         con.close()
 
 
-def lib_fix(db_dir, xml_path, passwords_path, kind=''):
-    res = {'sources': sources_sanitize(xml_path, passwords_path)}
-    if kind in ('', 'video'):
-        res['video'] = fix_video_paths(db_dir)
-    if kind in ('', 'music'):
-        res['music'] = fix_music_paths(db_dir, xml_path)
-    return res
+def debug_info(db_dir):
+    out = {'video': [], 'music': []}
+    for kind, key in (('video', 'video'), ('music', 'music')):
+        db = _db_opt(db_dir, kind)
+        if not db:
+            out[key] = {'error': 'db not found'}
+            continue
+        con = _db_connect(db)
+        try:
+            cols = _cols(con, 'path')
+            rows = con.execute('SELECT * FROM path').fetchall()
+            out[key] = {'db': os.path.basename(db), 'cols': cols, 'rows': [list(r) for r in rows]}
+        finally:
+            con.close()
+    # tail of kodi.log
+    try:
+        import xbmc
+        logp = xbmc.translatePath('special://logpath/kodi.log')
+    except Exception:
+        logp = None
+    if logp and os.path.exists(logp):
+        try:
+            with open(logp, 'rb') as f:
+                f.seek(0, 2)
+                size = f.tell()
+                f.seek(max(0, size - 200000))
+                out['log_tail'] = f.read().decode('utf-8', 'replace')
+        except Exception as e:
+            out['log_error'] = str(e)
+    return out
 
 
 def lib_wipe(db_dir, kind):
