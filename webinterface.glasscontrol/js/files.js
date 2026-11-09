@@ -54,7 +54,7 @@
       var srcPromise = K.be.ok ? K.be.call('/api/sources/list', { media: media }).then(function (r) { return (r.sources || []).map(function (s) { return { label: s.name, file: (s.paths && s.paths[0]) || '' }; }); }).catch(function () { return null; }) : Promise.resolve(null);
       return srcPromise.then(function (beSrc) {
         return K.rpc('Files.GetSources', { media: media }).then(function (r) {
-          if (!ctx.alive()) return; var src = (beSrc && beSrc.length) ? beSrc : (r.sources || []);
+          if (!ctx.alive()) return; var src = (beSrc !== null) ? beSrc : (r.sources || []);
         K.mount(ctx.view, html`${K.ui.head(title, { sub: t('Источники и файловый менеджер'), right: bar })}${o.tabs}
           ${K.be.ok ? '' : ''}<div class="glass panel list" style="padding:8px">${src.length ? src.map(function (s) {
             return K.ui.row({ icon: 'folder', img: '', title: s.label, sub: s.file, href: link(s.file),
@@ -158,7 +158,7 @@
       var r = rr[0], extra = rr[1] || {}, cmap = extra.content || {};
       // если серверная часть доступна — берём список источников из sources.xml (на лету, без перезапуска Kodi)
       var src;
-      if (K.be.ok && extra.sources) {
+      if (K.be.ok && Array.isArray(extra.sources)) {
         src = extra.sources.map(function (s) { return { label: s.name, file: (s.paths && s.paths[0]) || '' }; });
       } else {
         src = r.sources || [];
