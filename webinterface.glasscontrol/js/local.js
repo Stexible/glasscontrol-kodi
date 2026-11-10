@@ -99,7 +99,19 @@
 
   /* переключатель «куда играть» */
   K.paintTarget = paintTarget;
-  K.acts.target = function () { var n = K.target() === 'kodi' ? 'browser' : 'kodi'; K.store.set('target', n); paintTarget(); K.toast(n === 'browser' ? t('Воспроизведение: в этом браузере') : t('Воспроизведение: на Kodi'), 'ok'); K.emit('target'); };
+  K.paintTarget = paintTarget;
+  K.acts.target = function () {
+    var cur = K.target();
+    // stop current playback in the active engine
+    if (cur === 'kodi') {
+      if (K.player && K.player.id != null) { var pid = K.player.id; K.player.id = null; K.player.props = null; K.player.item = null; K.rpc('Player.Stop', { playerid: pid }).catch(function () { }); document.body.classList.remove('playing', 'video'); K.emit('player', K.player); }
+    } else {
+      if (K.local && K.local.i >= 0) K.local.stop();
+    }
+    var n = cur === 'kodi' ? 'browser' : 'kodi';
+    K.store.set('target', n); paintTarget(); K.toast(n === 'browser' ? t('Воспроизведение: в этом браузере') : t('Воспроизведение: на Kodi'), 'ok'); K.emit('target');
+    if (K.cur && K.cur.path === '/now') K.route(true);
+  };
   function paintTarget() { var b = $('#tgt'); if (!b) return; var br = K.target() === 'browser'; b.classList.toggle('on', br); b.innerHTML = K.frag(ic(br ? 'globe' : 'monitor', 20)); b.title = br ? t('Играет в браузере') : t('Играет на Kodi'); }
 
   /* перехват воспроизведения: в режиме «браузер» всё идёт в L */

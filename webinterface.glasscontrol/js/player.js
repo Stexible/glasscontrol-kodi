@@ -180,8 +180,7 @@
           <button class="ctl-btn" data-act="lprev">${ic('prev', 20)}</button>
           <button class="ctl-btn big" data-act="lpp">${ic(playing ? 'pause' : 'play', 22)}</button>
           <button class="ctl-btn" data-act="lnext">${ic('next', 20)}</button>
-          <button class="ctl-btn" data-act="lstop">${ic('x', 20)}</button></div>
-        <div class="mini-bar"><i></i></div>`, 'lbrowser|' + it.file + '|' + playing + '|' + (v && v.muted) + '|' + (v ? Math.round(v.volume*100) : 100));
+          <button class="ctl-btn" data-act="lstop">${ic('x', 20)}</button></div>`, 'lbrowser|' + it.file + '|' + playing + '|' + (v && v.muted) + '|' + (v ? Math.round(v.volume*100) : 100));
       return;
     }
     var playing = P.props && P.props.speed !== 0, thumb = P.thumb();
@@ -245,7 +244,8 @@
         if (K.local && K.local._embedded) {
           K.local._embedded = false;
           var v = K.local.el;
-          if (v && v.parentNode !== document.body) { document.body.appendChild(v); v.classList.remove('embedded'); }
+          if (v) { v.style.left = ''; v.style.top = ''; v.style.right = ''; v.style.bottom = ''; if (v.parentNode !== document.body) { document.body.appendChild(v); } v.classList.remove('embedded'); }
+          K.local._embeddedFile = null;
         }
       });
       function draw() {
@@ -255,7 +255,7 @@
             <div class="chips" style="justify-content:center"><a class="chip" href="#/movies">${t('Фильмы')}</a><a class="chip" href="#/music">${t('Музыка')}</a><a class="chip" href="#/tv">${t('Сериалы')}</a><a class="chip" href="#/files">${t('Файлы')}</a></div>`);
           setBg(''); 
           // Move player back to floating if embedded
-          if (K.local && K.local._embedded) { K.local._embedded = false; var v = K.local.el; if (v && v.parentNode !== document.body) { document.body.appendChild(v); v.classList.remove('embedded'); } }
+          if (K.local && K.local._embedded) { K.local._embedded = false; var v = K.local.el; if (v) { v.style.left = ''; v.style.top = ''; v.style.right = ''; v.style.bottom = ''; if (v.parentNode !== document.body) { document.body.appendChild(v); } v.classList.remove('embedded'); } }
           return;
         }
         if (K.target() === 'browser' && K.local && K.local.i >= 0 && P.id == null) {
@@ -270,7 +270,7 @@
           if (K.local._embedded) {
             K.local._embedded = false;
             var vv = K.local.el;
-            if (vv && vv.parentNode !== document.body) { document.body.appendChild(vv); vv.classList.remove('embedded'); }
+            if (vv) { vv.style.left = ''; vv.style.top = ''; vv.style.right = ''; vv.style.bottom = ''; if (vv.parentNode !== document.body) { document.body.appendChild(vv); } vv.classList.remove('embedded'); }
           }
           var isVideo = it.kind === 'video';
           if (isVideo) {
@@ -284,7 +284,7 @@
             var v = K.local.el;
             if (v) {
               var slot = document.getElementById('now-vslot');
-              if (slot) { slot.appendChild(v); v.classList.add('embedded'); K.local._embedded = true; K.local._embeddedFile = it.file; }
+              if (slot) { v.style.left = ''; v.style.top = ''; v.style.right = ''; v.style.bottom = ''; slot.appendChild(v); v.classList.add('embedded'); K.local._embedded = true; K.local._embeddedFile = it.file; }
             }
           } else {
             K.mount(view, html`${K.ui.head(t('Сейчас играет') + ' — ' + t('В браузере'))}

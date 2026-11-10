@@ -310,7 +310,21 @@
     return K.ui.confirm(lab + ' ' + t('Связь с Kodi будет потеряна.'), { danger: true }).then(function (y) { if (!y) return; return K.rpc(v === 'Quit' ? 'Application.Quit' : 'System.' + v); });
   };
   K.acts.profile = function (el) { return K.ui.confirm(t('Переключиться на профиль «{p}»?', { p: el.dataset.v }), {}).then(function (y) { if (y) return K.rpc('Profiles.LoadProfile', { profile: el.dataset.v, prompt: true }); }); };
-  K.acts.settarget = function (el) { K.store.set('target', el.dataset.v); if (K.paintTarget) K.paintTarget(); K.toast(el.dataset.v === 'browser' ? t('Воспроизведение: в браузере') : t('Воспроизведение: на Kodi'), 'ok'); K.emit && K.emit('target'); K.route(true); };
+  K.acts.settarget = function (el) {
+    var newV = el.dataset.v;
+    if (newV !== K.target()) {
+      if (K.target() === 'kodi') {
+        if (K.player && K.player.id != null) { var pid = K.player.id; K.player.id = null; K.player.props = null; K.player.item = null; K.rpc('Player.Stop', { playerid: pid }).catch(function () { }); document.body.classList.remove('playing', 'video'); K.emit('player', K.player); }
+      } else {
+        if (K.local && K.local.i >= 0) K.local.stop();
+      }
+      K.store.set('target', newV);
+      if (K.paintTarget) K.paintTarget();
+      K.toast(newV === 'browser' ? t('Воспроизведение: в этом браузере') : t('Воспроизведение: на Kodi'), 'ok');
+      K.emit('target');
+    }
+    K.route(true);
+  };
   K.acts.scroff = function () { return K.be.call('/api/exec', { builtin: 'ActivateScreensaver' }).then(function () { K.toast(t('Экран погашен'), 'ok'); }); };
   var brtSend = K.debounce(function (v) { K.be.call('/api/brightness', { value: v }).catch(K.err); }, 150);
   K.acts.brtset = function (el) { el.style.setProperty('--p', el.value + '%'); var l = $('[data-sv="brt"]'); if (l) l.textContent = el.value + '%'; brtSend(+el.value); };
