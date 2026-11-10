@@ -165,6 +165,8 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split('?')[0]
         if path == '/api/ping':          # ping без токена: только признак жизни
             return self._send(200, {'ok': 1, 'version': VERSION, 'auth': self._auth()})
+        if path == '/api/fs/download':
+            return self._download(d.get('path', ''))
         if not self._auth():
             return self._send(401, {'error': 'unauthorized'})
         try:
@@ -172,8 +174,6 @@ class Handler(BaseHTTPRequestHandler):
                 android = xbmc.getCondVisibility('System.Platform.Android')
                 return self._send(200, {'version': VERSION, 'android': bool(android), 'brightness': ops.brightness_get().get('supported', False),
                                         'platform': 'android' if android else sys.platform})
-            if path == '/api/fs/download':
-                return self._download(d.get('path', ''))
             if path == '/api/fs/list':
                 return self._send(200, ops.list_dir(d.get('path', '')))
             if path == '/api/fs/copy':
