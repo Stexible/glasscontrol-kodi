@@ -8,13 +8,13 @@
 
   function el() {
     if (L.el) return L.el;
-    var v = document.createElement('video'); v.id = 'lvideo'; v.setAttribute('playsinline', ''); v.setAttribute('disablePictureInPicture', ''); v.preload = 'auto'; v.controls = true;
+    var v = document.createElement('video'); v.id = 'lvideo'; v.setAttribute('playsinline', ''); v.setAttribute('disablePictureInPicture', ''); v.setAttribute('controlsList', 'nodownload nofullscreen noremoteplayback'); v.preload = 'auto'; v.controls = false;
     document.body.appendChild(v); L.el = v;
     // drag
     (function () {
       var dragging = false, ox = 0, oy = 0, moved = false;
       v.addEventListener('mousedown', function (e) {
-        if (e.button !== 0) return;
+        if (e.button !== 0 || v.classList.contains('embedded')) return;
         dragging = true; moved = false; ox = e.clientX - v.offsetLeft; oy = e.clientY - v.offsetTop; v.style.cursor = 'grabbing';
         e.preventDefault(); e.stopPropagation();
       });
@@ -33,7 +33,7 @@
     v.addEventListener('ended', function () { L.next(true); });
     v.addEventListener('play', function () { K.emit('local'); });
     v.addEventListener('pause', function () { K.emit('local'); });
-    v.addEventListener('timeupdate', upd); v.addEventListener('play', upd); v.addEventListener('pause', upd); v.addEventListener('loadedmetadata', upd);
+    v.addEventListener('loadedmetadata', function () { K.emit('local'); });
     v.addEventListener('error', function () { K.toast(t('Браузер не может воспроизвести этот формат'), 'err'); });
     return v;
   }
@@ -91,23 +91,10 @@
       navigator.mediaSession.setActionHandler('previoustrack', L.prev); navigator.mediaSession.setActionHandler('nexttrack', function () { L.next(); });
     } catch (e) { /* не критично */ }
   }
-  function upd() {
-    var bar = $('#lbar'); if (!bar || L.i < 0) return; var v = el(), it = L.q[L.i] || {};
-    var sig = L.i + '|' + L.q.length + '|' + v.paused + '|' + it.file;
-    if (bar._s !== sig) {
-      bar._s = sig;
-      bar.innerHTML = K.frag(html`<div class="mini-art">${ic(it.kind === 'video' ? 'film' : 'music', 22)}${it.thumb ? html`<img src="${K.img(it.thumb)}" alt="" onerror="this.remove()">` : ''}</div>
-        <div class="meta-l"><b>${it.title}</b><small>${t('В браузере')}${it.sub ? ' · ' + it.sub : ''} · ${L.i + 1}/${L.q.length}</small></div>
-        <input type="range" min="0" max="1000" value="0" id="lseek" data-input="lseek" aria-label="${t('Перемотка')}"><span class="mini-time" id="ltime"></span>
-        <div class="mini-ctl"><button class="ctl-btn" data-act="lprev">${ic('prev', 20)}</button><button class="ctl-btn big" data-act="lpp">${ic(v.paused ? 'play' : 'pause', 22)}</button><button class="ctl-btn" data-act="lnext">${ic('next', 20)}</button><button class="ctl-btn" data-act="lstop">${ic('x', 20)}</button></div>`);
-    }
-    var s = $('#lseek'), d = v.duration || 0;
-    if (s && d && !L.drag) { s.value = v.currentTime / d * 1000; s.style.setProperty('--p', v.currentTime / d * 100 + '%'); }
-    var tm = $('#ltime'); if (tm) tm.textContent = K.fmtTime(v.currentTime) + (d && isFinite(d) ? ' / ' + K.fmtTime(d) : '');
-  }
+  function upd() { K.emit('local'); }
   K.acts.lprev = L.prev; K.acts.lnext = function () { L.next(); }; K.acts.lstop = L.stop; K.acts.lpp = L.toggle;
-  K.acts.lmute = function () { var v = L.el; if (v) { v.muted = !v.muted; drawMini(); } };
-  K.acts.lvolset = function (e) { var v = L.el; if (v) { v.volume = e.value / 100; v.muted = false; } };
+  K.acts.lmute = function () { var v = L.el; if (v) { v.muted = !v.muted; K.emit('local'); } };
+  K.acts.lvolset = function (e) { var v = L.el; if (v) { v.volume = e.value / 100; v.muted = false; e.style.setProperty('--p', e.value + '%'); } };
   K.acts.lseek = function (e) { var v = el(); L.drag = true; clearTimeout(L._d); L._d = setTimeout(function () { L.drag = false; }, 400); if (v.duration) v.currentTime = e.value / 1000 * v.duration; };
 
   /* переключатель «куда играть» */
@@ -129,6 +116,6 @@
     return r;
   };
   K.on('boot', paintTarget);
-  document.addEventListener('DOMContentLoaded', function () { var tg = $('#tgt'); if (tg) paintTarget(); var b = document.createElement('div'); b.id = 'lbar'; b.className = 'glass'; document.body.appendChild(b); });
+  document.addEventListener('DOMContentLoaded', function () { var tg = $('#tgt'); if (tg) paintTarget(); });
   setTimeout(paintTarget, 0);
 })();

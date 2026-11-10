@@ -167,8 +167,23 @@
   /* ------------ мини-плеер ------------ */
   function drawMini() {
     var m = $('#mini'); if (!m) return;
-    if (P.id == null && !(K.target() === 'browser' && K.local && K.local.i >= 0)) { m.innerHTML = ''; m._sig = undefined; return; }
-    if (K.target() === 'browser' && K.local && K.local.i >= 0 && P.id == null) { m.innerHTML = ''; m._sig = undefined; return; }
+    var browser = K.target() === 'browser' && K.local && K.local.i >= 0 && P.id == null;
+    if (!browser && (P.id == null)) { m.innerHTML = ''; m._sig = undefined; return; }
+    if (browser) {
+      var it = K.local.q[K.local.i], v = K.local.el;
+      var playing = v && !v.paused;
+      K.mount(m, html`<div class="mini-art">${ic(it.kind === 'video' ? 'film' : 'music', 22)}${it.thumb ? html`<img src="${K.img(it.thumb)}" alt="" onerror="this.remove()">` : ''}</div>
+        <div class="mini-info"><b>${it.title}</b><small>${t('В браузере')}${it.sub ? ' · ' + it.sub : ''} · ${K.local.i + 1}/${K.local.q.length}</small></div>
+        <div class="mini-seek"><input type="range" min="0" max="1000" value="0" data-seekbar data-input="lseek" aria-label="${t('Перемотка')}"><span data-tpos>0:00</span></div>
+        <div class="mini-vol"><button class="ctl-btn" data-act="lmute" aria-label="${t('Звук')}">${ic(v && v.muted ? 'mute' : 'volume', 20)}</button><input type="range" min="0" max="100" value="${v ? Math.round(v.volume * 100) : 100}" style="--p:${v ? v.volume * 100 : 100}%" data-input="lvolset" aria-label="${t('Громкость')}"></div>
+        <div class="mini-ctl">
+          <button class="ctl-btn" data-act="lprev">${ic('prev', 20)}</button>
+          <button class="ctl-btn big" data-act="lpp">${ic(playing ? 'pause' : 'play', 22)}</button>
+          <button class="ctl-btn" data-act="lnext">${ic('next', 20)}</button>
+          <button class="ctl-btn" data-act="lstop">${ic('x', 20)}</button></div>
+        <div class="mini-bar"><i></i></div>`, 'lbrowser|' + it.file + '|' + playing + '|' + (v && v.muted) + '|' + (v ? Math.round(v.volume*100) : 100));
+      return;
+    }
     var playing = P.props && P.props.speed !== 0, thumb = P.thumb();
     K.mount(m, html`<div class="mini-art">${ic(P.type === 'audio' ? 'music' : 'film', 22)}${thumb ? html`<img src="${K.img(thumb)}" alt="" onerror="this.remove()">` : ''}</div>
       <div class="mini-info"><b>${P.title()}</b><small>${P.sub()}</small></div>
@@ -184,18 +199,27 @@
     tick();
   }
   document.addEventListener('click', function (e) {
-    var m = e.target.closest('#mini'); if (m && !e.target.closest('button')) K.go('/now');
+    var m = e.target.closest('#mini'); if (m && !e.target.closest('button, input, a')) K.go('/now');
   });
 
   /* ------------ тик: время/прогресс ------------ */
   function tick() {
-    if (P.id == null || !P.props) return;
-    var pos = P.pos(), tot = P.total(), pct = tot ? pos / tot * 100 : 0;
-    var bar = $('#mini .mini-bar i'); if (bar) bar.style.width = pct + '%';
-    var mt = $('[data-pos2]'); if (mt) mt.textContent = K.fmtTime(pos) + (tot ? ' / ' + K.fmtTime(tot) : '');
-    if (!P.drag) {
-      K.$$('[data-tpos]').forEach(function (n) { n.textContent = K.fmtTime(pos); });
-      K.$$('[data-seekbar]').forEach(function (n) { n.value = tot ? pos / tot * 1000 : 0; n.style.setProperty('--p', pct + '%'); });
+    if (P.id != null && P.props) {
+      var pos = P.pos(), tot = P.total(), pct = tot ? pos / tot * 100 : 0;
+      var bar = $('#mini .mini-bar i'); if (bar) bar.style.width = pct + '%';
+      var mt = $('[data-pos2]'); if (mt) mt.textContent = K.fmtTime(pos) + (tot ? ' / ' + K.fmtTime(tot) : '');
+      if (!P.drag) {
+        K.$$('[data-tpos]').forEach(function (n) { n.textContent = K.fmtTime(pos); });
+        K.$$('[data-seekbar]').forEach(function (n) { n.value = tot ? pos / tot * 1000 : 0; n.style.setProperty('--p', pct + '%'); });
+      }
+    } else if (K.target() === 'browser' && K.local && K.local.i >= 0 && K.local.el) {
+      var v = K.local.el, pos = v.currentTime || 0, tot = v.duration || 0, pct = tot ? pos / tot * 100 : 0;
+      var bar = $('#mini .mini-bar i'); if (bar) bar.style.width = pct + '%';
+      var mt = $('[data-pos2]'); if (mt) mt.textContent = K.fmtTime(pos) + (tot && isFinite(tot) ? ' / ' + K.fmtTime(tot) : '');
+      if (!(K.local && K.local.drag)) {
+        K.$$('[data-tpos]').forEach(function (n) { n.textContent = K.fmtTime(pos); });
+        K.$$('[data-seekbar]').forEach(function (n) { n.value = tot ? pos / tot * 1000 : 0; n.style.setProperty('--p', pct + '%'); });
+      }
     }
   }
   setInterval(function () { if (!document.hidden) tick(); }, 250);
@@ -235,21 +259,41 @@
           return;
         }
         if (K.target() === 'browser' && K.local && K.local.i >= 0 && P.id == null) {
-          if (K.local._embedded) { setBg(''); return; }
-          // Browser playback mode — embed player in page
           var it = K.local.q[K.local.i];
-          K.mount(view, html`${K.ui.head(t('Сейчас играет') + ' — ' + t('В браузере'))}
-            <div class="now browser">
-              <div id="now-vslot" class="now-vslot"></div>
-              <div><h1 class="now-t">${it.title}</h1>${it.sub ? html`<div class="now-a">${it.sub}</div>` : ''}
-              <div class="transport"><button class="ctl-btn" data-act="lprev">${ic('prev',24)}</button><button class="ctl-btn big" data-act="lpp">${ic(K.local.el && K.local.el.paused ? 'play' : 'pause',26)}</button><button class="ctl-btn" data-act="lnext">${ic('next',24)}</button><button class="ctl-btn" data-act="lstop">${ic('x',22)}</button></div>
-              <p class="note">${t('Воспроизведение в браузере.')}</p></div></div>`);
-          setBg('');
-          // Move floating player into the slot
-          var v = K.local.el;
-          if (v && !K.local._embedded) {
-            var slot = document.getElementById('now-vslot');
-            if (slot) { slot.appendChild(v); v.classList.add('embedded'); K.local._embedded = true; }
+          // Already embedded and same track — just refresh play/pause icon
+          if (K.local._embedded && K.local._embeddedFile === it.file) {
+            var btn = view.querySelector('[data-act="lpp"]');
+            if (btn) btn.innerHTML = K.frag(ic(K.local.el && K.local.el.paused ? 'play' : 'pause', 26));
+            setBg(''); return;
+          }
+          // If embedded on a different track, detach first
+          if (K.local._embedded) {
+            K.local._embedded = false;
+            var vv = K.local.el;
+            if (vv && vv.parentNode !== document.body) { document.body.appendChild(vv); vv.classList.remove('embedded'); }
+          }
+          var isVideo = it.kind === 'video';
+          if (isVideo) {
+            K.mount(view, html`${K.ui.head(t('Сейчас играет') + ' — ' + t('В браузере'))}
+              <div class="now browser">
+                <div id="now-vslot" class="now-vslot"></div>
+                <div><h1 class="now-t">${it.title}</h1>${it.sub ? html`<div class="now-a">${it.sub}</div>` : ''}
+                <div class="transport"><button class="ctl-btn" data-act="lprev">${ic('prev',24)}</button><button class="ctl-btn big" data-act="lpp">${ic(K.local.el && K.local.el.paused ? 'play' : 'pause',26)}</button><button class="ctl-btn" data-act="lnext">${ic('next',24)}</button><button class="ctl-btn" data-act="lstop">${ic('x',22)}</button></div>
+                <p class="note">${t('Воспроизведение в браузере.')}</p></div></div>`);
+            setBg('');
+            var v = K.local.el;
+            if (v) {
+              var slot = document.getElementById('now-vslot');
+              if (slot) { slot.appendChild(v); v.classList.add('embedded'); K.local._embedded = true; K.local._embeddedFile = it.file; }
+            }
+          } else {
+            K.mount(view, html`${K.ui.head(t('Сейчас играет') + ' — ' + t('В браузере'))}
+              <div class="now">
+                <div><div class="now-art">${ic('music', 64)}${it.thumb ? html`<img src="${K.img(it.thumb)}" alt="" onerror="this.remove()">` : ''}</div></div>
+                <div><h1 class="now-t">${it.title}</h1>${it.sub ? html`<div class="now-a">${it.sub}</div>` : ''}
+                <div class="transport"><button class="ctl-btn" data-act="lprev">${ic('prev',24)}</button><button class="ctl-btn big" data-act="lpp">${ic(K.local.el && K.local.el.paused ? 'play' : 'pause',26)}</button><button class="ctl-btn" data-act="lnext">${ic('next',24)}</button><button class="ctl-btn" data-act="lstop">${ic('x',22)}</button></div>
+                <p class="note">${t('Воспроизведение в браузере.')}</p></div></div>`);
+            setBg('');
           }
           return;
         }
@@ -311,7 +355,7 @@
         })}</div>`, qsig);
       }
       draw();
-      ctx.cleanup.push(K.on('player', draw), K.on('queue', function () { P.queue = null; drawQueue(); }),
+      ctx.cleanup.push(K.on('player', draw), K.on('local', draw), K.on('queue', function () { P.queue = null; drawQueue(); }),
         function () { if (bg) bg.remove(); });
     }
   };
