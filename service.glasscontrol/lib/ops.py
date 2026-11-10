@@ -476,7 +476,24 @@ def lib_reset(db_dir, kind=''):
     return out
 
 
-def debug_info(db_dir):
+def lib_reset(db_dir, kind=''):
+    out = {}
+    kinds = ['video', 'music'] if kind in ('', 'all') else [kind]
+    for k in kinds:
+        if k not in ('video', 'music'):
+            continue
+        db = _db_opt(db_dir, k)
+        if not db:
+            out[k] = {'error': 'db not found'}
+            continue
+        con = _db_connect(db)
+        try:
+            con.execute('DELETE FROM path')
+            con.commit()
+            out[k] = {'ok': True}
+        finally:
+            con.close()
+    return out
     out = {'video': [], 'music': []}
     for kind, key in (('video', 'video'), ('music', 'music')):
         db = _db_opt(db_dir, kind)

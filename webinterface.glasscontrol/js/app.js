@@ -43,16 +43,17 @@
   function seg(path) { return '/' + (path.split('/')[1] || ''); }
   function drawNav() {
     var cur = seg(K.cur.path), pl = K.player && K.player.id != null, hidePvr = K.st.nopvr;
-    var n = NAV.filter(function (x) { return !(x && x[0] === '/pvr' && hidePvr); });
+    var hidden = K.store.get('hiddenNav', []) || [];
+    var n = NAV.filter(function (x) { return x && (x === 0 || hidden.indexOf(x[0]) < 0) && !(x[0] === '/pvr' && hidePvr); });
     K.mount($('#nav'), html`<div class="brand"><div class="brand-logo">${ic('play', 20)}</div><div><b>Glass Control</b><small>Kodi</small></div></div>
       ${n.map(function (x) { return x ? html`<a class="nv ${x[0] === cur ? 'on' : ''}" href="#${x[0]}">${ic(x[1], 20)}<span>${t(x[2])}</span>${x[0] === '/now' && pl ? html`<i class="dot"></i>` : ''}</a>` : html`<hr class="sep">`; })}
-      <div class="side-foot"><div class="seg">${['ru', 'en'].map(function (l) { return html`<button class="${K.lang === l ? 'on' : ''}" data-act="lang" data-v="${l}">${l.toUpperCase()}</button>`; })}</div><span id="ver">${K.st.verText || ''}</span></div>`, 'nav|' + cur + '|' + !!pl + '|' + !!hidePvr + '|' + K.lang + '|' + (K.st.verText || ''));
-    K.mount($('#tabbar'), html`${TABS.map(function (x) {
+      <div class="side-foot"><div class="seg">${['ru', 'en'].map(function (l) { return html`<button class="${K.lang === l ? 'on' : ''}" data-act="lang" data-v="${l}">${l.toUpperCase()}</button>`; })}</div><span id="ver">${K.st.verText || ''}</span></div>`, 'nav|' + cur + '|' + !!pl + '|' + !!hidePvr + '|' + K.lang + '|' + (K.st.verText || '') + '|' + hidden.join(','));
+    K.mount($('#tabbar'), html`${TABS.filter(function (x) { return x === 'menu' || hidden.indexOf(x[0]) < 0; }).map(function (x) {
       if (x === 'menu') return html`<button data-act="drawer">${ic('menu', 22)}<span>${t('Меню')}</span></button>`;
       var on = x[0] === cur || (x[0] === '/movies' && ['/tv', '/music', '/mv'].indexOf(cur) >= 0);
       return html`<a class="${on ? 'on' : ''}" href="#${x[0]}">${ic(x[1], 22)}<span>${t(x[2])}</span></a>`; })}`, 'tab|' + cur);
   }
-  K.acts.drawer = function () { document.body.classList.toggle('drawer'); };
+  K.drawNav = drawNav;
   K.acts.lang = function (el) { K.setLang(el.dataset.v); };
 
   /* ---------- роутер с кэшем списков ---------- */

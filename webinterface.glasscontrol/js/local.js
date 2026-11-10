@@ -16,6 +16,9 @@
     return v;
   }
   function url(file) {
+    if (K.be && K.be.ok) {
+      return Promise.resolve(K.be.base + '/api/fs/download?path=' + encodeURIComponent(file) + '&token=' + encodeURIComponent(K.be.token));
+    }
     return K.rpc('Files.PrepareDownload', { path: file }).then(function (r) { return '/' + r.details.path; });
   }
   var KINDS = { movieid: [V + 'GetMovieDetails', 'moviedetails', 'video'], episodeid: [V + 'GetEpisodeDetails', 'episodedetails', 'video'], musicvideoid: [V + 'GetMusicVideoDetails', 'musicvideodetails', 'video'], songid: [A + 'GetSongDetails', 'songdetails', 'audio'] };

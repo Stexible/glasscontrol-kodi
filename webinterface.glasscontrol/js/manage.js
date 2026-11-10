@@ -103,12 +103,24 @@
     K.mount(ctx.view, html`${K.ui.head(t('Настройки'), { sub: t('Оформление интерфейса') })}<div class="tabs"><a href="#/settings">Kodi</a>${extraTabs('look')}</div>
       <div class="glass panel"><h3 class="ph3">${t('Тема')}</h3>${K.ui.seg([['dark', t('Тёмная')], ['light', t('Светлая')], ['auto', t('Авто')]], mode, 'themeset')}
         <h3 class="ph3" style="margin-top:22px">${t('Акцентный цвет')}</h3><div class="swatches">${K.ACCENTS.map(function (a) { return html`<button class="swatch ${a.id === acc ? 'on' : ''}" data-act="accset" data-v="${a.id}" style="--c:rgb(${a.ac.join(',')})" aria-label="${a.id}" title="${a.id}"><i></i></button>`; })}</div>
-        <p class="note">${t('Настройки хранятся в браузере и действуют только на этом устройстве. Фон тоже окрашивается в выбранный цвет.')}</p></div>
+        <div class="glass panel" style="margin-top:14px"><h3 class="ph3">${t('Видимость пунктов меню')}</h3>
+        <div class="chips tight">${NAV.filter(function (x) { return x && x !== 0; }).map(function (x) {
+          var hidden = (K.store.get('hiddenNav', []) || []).indexOf(x[0]) >= 0;
+          return html`<button class="chip ${hidden ? '' : 'on'}" data-act="navtoggle" data-v="${x[0]}">${ic(x[1], 16)} ${t(x[2])}</button>`;
+        })}</div>
+        <p class="note">${t('Скрытые пункты не будут отображаться в боковом меню и нижней панели. Настройки хранятся в браузере.')}</p></div>
       <div class="glass panel" style="margin-top:14px"><h3 class="ph3">${t('События в реальном времени')}</h3><label class="field"><span>${t('Порт событий (WebSocket, TCP)')}</span><div class="grp"><input class="inp" id="wsp" type="number" value="${K.store.get('wsport', 9090)}"><button class="btn" data-act="wsport">OK</button></div></label>
         <p class="note">${K.events && K.events.ok ? t('События в реальном времени: подключено') : t('События: нет WebSocket — используется периодический опрос. Включите «Разрешить управление с других систем» в Настройки → Службы → Управление.')}</p></div>`);
   }
   K.acts.themeset = function (el) { K.theme.set('theme', el.dataset.v); K.route(true); };
   K.acts.accset = function (el) { K.theme.set('accent', el.dataset.v); K.route(true); };
+  K.acts.navtoggle = function (el) {
+    var v = el.dataset.v, hidden = K.store.get('hiddenNav', []) || [], i = hidden.indexOf(v);
+    if (i >= 0) hidden.splice(i, 1); else hidden.push(v);
+    K.store.set('hiddenNav', hidden);
+    el.classList.toggle('on', i >= 0);
+    K.drawNav && K.drawNav();
+  };
   K.acts.setlevel = function (el) { K.store.set('level', el.value); K.route(true); };
 
   /* форматирование значения: formatlabel («{0:d} мин», «%i min») и подпись минимума («Никогда») */

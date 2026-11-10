@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """Glass Control backend: локальный HTTP-сервис для операций, которых нет в JSON-RPC Kodi."""
 import json
+import mimetypes
 import os
 import secrets
 import sys
 import threading
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import xbmc
@@ -44,14 +46,37 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Max-Age', '600')
 
-    def _send(self, code, obj):
-        body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
-        self.send_response(code)
+    def _download(self, fpath):
+        if not fpath:
+            return self._send(400, {'error': 'empty path'})
+        try:
+            import xbmcvfs
+            vf = xbmcvfs.File(fpath)
+            size = vf.size()
+        except Exception as e:
+            return self._send(400, {'error': str(e)})
+        if size < 0:
+            size = 0
+        ct = mimetypes.guess_type(fpath)[0] or 'application/octet-stream'
+        self.send_response(200)
         self._cors()
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Content-Type', ct)
+        self.send_header('Content-Length', str(size))
+        self.send_header('Content-Disposition', 'inline')
         self.end_headers()
-        self.wfile.write(body)
+        try:
+            chunk = 65536
+            while True:
+                data = vf.readBytes(chunk)
+                if not data:
+                    break
+                self.wfile.write(data)
+        except Exception:
+            pass
+        try:
+            vf.close()
+        except Exception:
+            pass
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -59,10 +84,16 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _auth(self):
-        return secrets.compare_digest(self.headers.get('X-Token', ''), TOKEN)
+        tok = self.headers.get('X-Token', '')
+        if not tok:
+            qs = urllib.parse.urlparse(self.path).query
+            tok = urllib.parse.parse_qs(qs).get('token', [''])[0]
+        return secrets.compare_digest(tok, TOKEN)
 
     def do_GET(self):
-        self._route('GET', {})
+        qs = urllib.parse.urlparse(self.path).query
+        d = {k: v[0] for k, v in urllib.parse.parse_qs(qs).items()}
+        self._route('GET', d)
 
     def do_POST(self):
         try:
@@ -83,6 +114,8 @@ class Handler(BaseHTTPRequestHandler):
                 android = xbmc.getCondVisibility('System.Platform.Android')
                 return self._send(200, {'version': VERSION, 'android': bool(android), 'brightness': ops.brightness_get().get('supported', False),
                                         'platform': 'android' if android else sys.platform})
+            if path == '/api/fs/download':
+                return self._download(d.get('path', ''))
             if path == '/api/fs/list':
                 return self._send(200, ops.list_dir(d.get('path', '')))
             if path == '/api/fs/copy':
@@ -117,7 +150,15 @@ class Handler(BaseHTTPRequestHandler):
             if path == '/api/lib/reset':
                 return self._send(200, ops.lib_reset(db_dir(), d.get('kind', '')))
             if path == '/api/debug':
-                return self._send(200, ops.debug_info(db_dir()))
+                res = ops.debug_info(db_dir())
+                # attach sources.xml and passwords.xml
+                for name, p in (('sources_xml', sources_xml()), ('passwords_xml', passwords_xml())):
+                    try:
+                        with open(p) as f:
+                            res[name] = f.read()
+                    except Exception as e:
+                        res[name + '_error'] = str(e)
+                return self._send(200, res)
             if path == '/api/lib/wipe':
                 res = ops.lib_wipe(db_dir(), d['kind'])
                 res['fix'] = ops.lib_fix(db_dir(), sources_xml(), passwords_xml(), d['kind'])
