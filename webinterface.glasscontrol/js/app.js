@@ -92,8 +92,11 @@
       view.textContent = ''; view.appendChild(hit.frag); active = hit.ctx; active.alive = function () { return my === token; };
       delete CACHE[r.key]; ORDER = ORDER.filter(function (k) { return k !== r.key; });
       document.title = (page.title ? page.title(r) + ' · ' : '') + 'Glass Control';
-      window.scrollTo(0, hit.y);
-      if (hit.dirty && active.refresh) active.refresh();
+      if (hit.dirty && active.refresh) {
+        active.refresh().then(function () { window.scrollTo(0, hit.y); });
+      } else {
+        window.scrollTo(0, hit.y);
+      }
       return;
     }
     window.scrollTo(0, 0);
