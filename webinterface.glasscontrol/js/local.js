@@ -31,6 +31,8 @@
       v.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
     })();
     v.addEventListener('ended', function () { L.next(true); });
+    v.addEventListener('play', function () { K.emit('local'); });
+    v.addEventListener('pause', function () { K.emit('local'); });
     v.addEventListener('timeupdate', upd); v.addEventListener('play', upd); v.addEventListener('pause', upd); v.addEventListener('loadedmetadata', upd);
     v.addEventListener('error', function () { K.toast(t('Браузер не может воспроизвести этот формат'), 'err'); });
     return v;
@@ -74,11 +76,12 @@
       if (K.player && K.player.id != null) K.rpc('Player.Stop', { playerid: K.player.id }).catch(function () { });   // Kodi замолкает
       var pr = v.play(); if (pr && pr.catch) pr.catch(function () { K.toast(t('Нажмите ▶, браузер заблокировал автозапуск'), 'err'); });
       media(it); upd(); K.emit('local');
+      document.body.classList.add('playing'); document.body.classList.toggle('video', it.kind === 'video');
     }).catch(K.err);
   };
   L.next = function (auto) { if (L.i + 1 < L.q.length) { L.i++; return L.load(); } if (auto) L.stop(); };
   L.prev = function () { var v = el(); if (v.currentTime > 4 || L.i === 0) { v.currentTime = 0; return; } L.i--; return L.load(); };
-  L.stop = function () { var v = el(); v.pause(); v.removeAttribute('src'); v.load(); L.q = []; L.i = -1; document.body.classList.remove('lplay', 'lvid'); K.emit('local'); };
+  L.stop = function () { var v = el(); v.pause(); v.removeAttribute('src'); v.load(); L.q = []; L.i = -1; document.body.classList.remove('lplay', 'lvid', 'playing', 'video'); K.emit('local'); };
   L.toggle = function () { var v = el(); if (v.paused) v.play(); else v.pause(); };
   function media(it) {
     if (!('mediaSession' in navigator)) return;
