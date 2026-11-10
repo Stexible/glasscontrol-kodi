@@ -66,7 +66,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(400, {'error': str(e)})
         if size < 0:
             size = 0
-        ct = mimetypes.guess_type(fpath)[0] or 'application/octet-stream'
+        _MIME = {'.mp3': 'audio/mpeg', '.flac': 'audio/flac', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.oga': 'audio/ogg', '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.opus': 'audio/opus', '.wma': 'audio/x-ms-wma',
+                 '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.webm': 'video/webm', '.mkv': 'video/x-matroska', '.avi': 'video/x-msvideo', '.mov': 'video/quicktime', '.ts': 'video/mp2t', '.m2ts': 'video/mp2t', '.ogv': 'video/ogg'}
+        ext = os.path.splitext(fpath)[1].lower()
+        ct = mimetypes.guess_type(fpath)[0] or _MIME.get(ext) or 'application/octet-stream'
         self.send_response(200)
         self._cors()
         self.send_header('Content-Type', ct)
