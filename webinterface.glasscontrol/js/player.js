@@ -174,13 +174,14 @@
       var playing = v && !v.paused;
       K.mount(m, html`<div class="mini-art">${ic(it.kind === 'video' ? 'film' : 'music', 22)}${it.thumb ? html`<img src="${K.img(it.thumb)}" alt="" onerror="this.remove()">` : ''}</div>
         <div class="mini-info"><b>${it.title}</b><small>${t('В браузере')}${it.sub ? ' · ' + it.sub : ''} · ${K.local.i + 1}/${K.local.q.length}</small></div>
-        <div class="mini-seek"><input type="range" min="0" max="1000" value="0" data-seekbar data-input="lseek" aria-label="${t('Перемотка')}"><span data-tpos>0:00</span></div>
+        <span class="mini-time" data-pos2></span>
         <div class="mini-vol"><button class="ctl-btn" data-act="lmute" aria-label="${t('Звук')}">${ic(v && v.muted ? 'mute' : 'volume', 20)}</button><input type="range" min="0" max="100" value="${v ? Math.round(v.volume * 100) : 100}" style="--p:${v ? v.volume * 100 : 100}%" data-input="lvolset" aria-label="${t('Громкость')}"></div>
         <div class="mini-ctl">
           <button class="ctl-btn" data-act="lprev">${ic('prev', 20)}</button>
           <button class="ctl-btn big" data-act="lpp">${ic(playing ? 'pause' : 'play', 22)}</button>
           <button class="ctl-btn" data-act="lnext">${ic('next', 20)}</button>
-          <button class="ctl-btn" data-act="lstop">${ic('x', 20)}</button></div>`, 'lbrowser|' + it.file + '|' + playing + '|' + (v && v.muted) + '|' + (v ? Math.round(v.volume*100) : 100));
+          <button class="ctl-btn" data-act="lstop">${ic('x', 20)}</button></div>
+        <div class="mini-bar"><input type="range" min="0" max="1000" value="0" data-seekbar data-input="lseek" aria-label="${t('Перемотка')}"></div>`, 'lbrowser|' + it.file + '|' + playing + '|' + (v && v.muted) + '|' + (v ? Math.round(v.volume*100) : 100));
       return;
     }
     var playing = P.props && P.props.speed !== 0, thumb = P.thumb();
@@ -194,7 +195,7 @@
         <button class="ctl-btn big" data-act="pp" aria-label="${t('Пауза')}">${ic(playing ? 'pause' : 'play', 22)}</button>
         <button class="ctl-btn" data-act="next" aria-label="${t('Далее')}">${ic('next', 20)}</button>
         <button class="ctl-btn" data-act="stop" aria-label="${t('Стоп')}">${ic('stop', 20)}</button></div>
-      <div class="mini-bar"><i></i></div>`, [P.id, P.title(), P.sub(), thumb, playing, eqPaused(), P.vol.muted].join('|'));
+      <div class="mini-bar"><input type="range" min="0" max="1000" value="0" data-seekbar data-input="seekin" data-change="seekgo" aria-label="${t('Перемотка')}"></div>`, [P.id, P.title(), P.sub(), thumb, playing, eqPaused(), P.vol.muted].join('|'));
     tick();
   }
   document.addEventListener('click', function (e) {
