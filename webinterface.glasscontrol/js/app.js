@@ -247,7 +247,7 @@
     });
     K.on('offline', function () { $('#conn-t').textContent = t('Нет связи'); }); K.on('online', function () { $('#conn-t').textContent = t('Подключено'); });
   }
-  K.on('player', function () { var d = $('.nv .dot'); if (!!d !== (K.player.id != null)) drawNav(); });
+  K.on('target', function () { if (K.paintTarget) K.paintTarget(); });
 
   K.start = function () {
     initTop();

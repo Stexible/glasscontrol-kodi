@@ -106,6 +106,7 @@
   K.acts.lseek = function (e) { var v = el(); L.drag = true; clearTimeout(L._d); L._d = setTimeout(function () { L.drag = false; }, 400); if (v.duration) v.currentTime = e.value / 1000 * v.duration; };
 
   /* переключатель «куда играть» */
+  K.paintTarget = paintTarget;
   K.acts.target = function () { var n = K.target() === 'kodi' ? 'browser' : 'kodi'; K.store.set('target', n); paintTarget(); K.toast(n === 'browser' ? t('Воспроизведение: в этом браузере') : t('Воспроизведение: на Kodi'), 'ok'); K.emit('target'); };
   function paintTarget() { var b = $('#tgt'); if (!b) return; var br = K.target() === 'browser'; b.classList.toggle('on', br); b.innerHTML = K.frag(ic(br ? 'globe' : 'monitor', 20)); b.title = br ? t('Играет в браузере') : t('Играет на Kodi'); }
 

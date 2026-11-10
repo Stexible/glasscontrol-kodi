@@ -167,7 +167,19 @@
   /* ------------ мини-плеер ------------ */
   function drawMini() {
     var m = $('#mini'); if (!m) return;
-    if (P.id == null) { m.innerHTML = ''; m._sig = undefined; return; }
+    if (P.id == null && !(K.target() === 'browser' && K.local && K.local.i >= 0)) { m.innerHTML = ''; m._sig = undefined; return; }
+    if (K.target() === 'browser' && K.local && K.local.i >= 0 && P.id == null) {
+      var it = K.local.q[K.local.i], v = K.local.el;
+      var playing = v && !v.paused;
+      K.mount(m, html`<div class="mini-art">${ic(it.kind === 'video' ? 'film' : 'music', 22)}${it.thumb ? html`<img src="${K.img(it.thumb)}" alt="" onerror="this.remove()">` : ''}</div>
+        <div class="mini-info"><b>${it.title}</b><small>${t('В браузере')}${it.sub ? ' · ' + it.sub : ''}</small></div>
+        <div class="mini-ctl">
+          <button class="ctl-btn" data-act="lprev">${ic('prev', 20)}</button>
+          <button class="ctl-btn big" data-act="lpp">${ic(playing ? 'pause' : 'play', 22)}</button>
+          <button class="ctl-btn" data-act="lnext">${ic('next', 20)}</button>
+          <button class="ctl-btn" data-act="lstop">${ic('x', 20)}</button></div>`, 'local|' + it.file + '|' + playing);
+      return;
+    }
     var playing = P.props && P.props.speed !== 0, thumb = P.thumb();
     K.mount(m, html`<div class="mini-art">${ic(P.type === 'audio' ? 'music' : 'film', 22)}${thumb ? html`<img src="${K.img(thumb)}" alt="" onerror="this.remove()">` : ''}</div>
       <div class="mini-info"><b>${P.title()}</b><small>${P.sub()}</small></div>
