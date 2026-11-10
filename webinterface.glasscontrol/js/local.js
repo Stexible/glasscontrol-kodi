@@ -8,7 +8,7 @@
 
   function el() {
     if (L.el) return L.el;
-    var v = document.createElement('video'); v.id = 'lvideo'; v.setAttribute('playsinline', ''); v.preload = 'auto'; v.controls = true;
+    var v = document.createElement('video'); v.id = 'lvideo'; v.setAttribute('playsinline', ''); v.setAttribute('disablePictureInPicture', ''); v.preload = 'auto'; v.controls = true;
     document.body.appendChild(v); L.el = v;
     // drag
     (function () {
@@ -103,6 +103,8 @@
     var tm = $('#ltime'); if (tm) tm.textContent = K.fmtTime(v.currentTime) + (d && isFinite(d) ? ' / ' + K.fmtTime(d) : '');
   }
   K.acts.lprev = L.prev; K.acts.lnext = function () { L.next(); }; K.acts.lstop = L.stop; K.acts.lpp = L.toggle;
+  K.acts.lmute = function () { var v = L.el; if (v) { v.muted = !v.muted; drawMini(); } };
+  K.acts.lvolset = function (e) { var v = L.el; if (v) { v.volume = e.value / 100; v.muted = false; } };
   K.acts.lseek = function (e) { var v = el(); L.drag = true; clearTimeout(L._d); L._d = setTimeout(function () { L.drag = false; }, 400); if (v.duration) v.currentTime = e.value / 1000 * v.duration; };
 
   /* переключатель «куда играть» */
