@@ -168,19 +168,7 @@
   function drawMini() {
     var m = $('#mini'); if (!m) return;
     if (P.id == null && !(K.target() === 'browser' && K.local && K.local.i >= 0)) { m.innerHTML = ''; m._sig = undefined; return; }
-    if (K.target() === 'browser' && K.local && K.local.i >= 0 && P.id == null) {
-      var it = K.local.q[K.local.i], v = K.local.el;
-      var playing = v && !v.paused;
-      K.mount(m, html`<div class="mini-art">${ic(it.kind === 'video' ? 'film' : 'music', 22)}${it.thumb ? html`<img src="${K.img(it.thumb)}" alt="" onerror="this.remove()">` : ''}</div>
-        <div class="mini-info"><b>${it.title}</b><small>${t('В браузере')}${it.sub ? ' · ' + it.sub : ''}</small></div>
-        <div class="mini-vol"><button class="ctl-btn" data-act="lmute" aria-label="${t('Звук')}">${ic(v && v.muted ? 'mute' : 'volume', 20)}</button><input type="range" min="0" max="100" value="${v ? Math.round(v.volume * 100) : 100}" style="--p:${v ? v.volume * 100 : 100}%" data-input="lvolset" aria-label="${t('Громкость')}"></div>
-        <div class="mini-ctl">
-          <button class="ctl-btn" data-act="lprev">${ic('prev', 20)}</button>
-          <button class="ctl-btn big" data-act="lpp">${ic(playing ? 'pause' : 'play', 22)}</button>
-          <button class="ctl-btn" data-act="lnext">${ic('next', 20)}</button>
-          <button class="ctl-btn" data-act="lstop">${ic('x', 20)}</button></div>`, 'local|' + it.file + '|' + playing);
-      return;
-    }
+    if (K.target() === 'browser' && K.local && K.local.i >= 0 && P.id == null) { m.innerHTML = ''; m._sig = undefined; return; }
     var playing = P.props && P.props.speed !== 0, thumb = P.thumb();
     K.mount(m, html`<div class="mini-art">${ic(P.type === 'audio' ? 'music' : 'film', 22)}${thumb ? html`<img src="${K.img(thumb)}" alt="" onerror="this.remove()">` : ''}</div>
       <div class="mini-info"><b>${P.title()}</b><small>${P.sub()}</small></div>
@@ -252,6 +240,7 @@
           var it = K.local.q[K.local.i];
           K.mount(view, html`${K.ui.head(t('Сейчас играет') + ' — ' + t('В браузере'))}
             <div class="now browser">
+              <div id="now-vslot" class="now-vslot"></div>
               <div><h1 class="now-t">${it.title}</h1>${it.sub ? html`<div class="now-a">${it.sub}</div>` : ''}
               <div class="transport"><button class="ctl-btn" data-act="lprev">${ic('prev',24)}</button><button class="ctl-btn big" data-act="lpp">${ic(K.local.el && K.local.el.paused ? 'play' : 'pause',26)}</button><button class="ctl-btn" data-act="lnext">${ic('next',24)}</button><button class="ctl-btn" data-act="lstop">${ic('x',22)}</button></div>
               <p class="note">${t('Воспроизведение в браузере.')}</p></div></div>`);
