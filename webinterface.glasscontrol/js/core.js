@@ -62,6 +62,7 @@
     remote: '<rect x="7" y="2.5" width="10" height="19" rx="3.2"/><circle cx="12" cy="8" r="2"/><path d="M10 14h4M10 18h4"/>',
     monitor: '<rect x="3" y="4" width="18" height="12" rx="2.2"/><path d="M8 20h8M12 16v4"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>',
+    wide: '<rect x="2" y="7" width="20" height="10" rx="2"/>',
     x: '<path d="M18 6 6 18M6 6l12 12"/>',
     more: '<circle' + F + ' cx="5" cy="12" r="1.7"/><circle' + F + ' cx="12" cy="12" r="1.7"/><circle' + F + ' cx="19" cy="12" r="1.7"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
