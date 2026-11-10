@@ -218,7 +218,7 @@
       var view = ctx.view, bg = null;
       function draw() {
         if (view.contains(document.activeElement) && document.activeElement.type === 'range' && P.drag) return;
-        if (P.id == null && !(K.target() === 'browser' && L && L.i >= 0)) {
+        if (P.id == null && !(K.target() === 'browser' && K.local && K.local.i >= 0)) {
           K.mount(view, html`${K.ui.head(t('Сейчас играет'))}${K.ui.empty('music', t('Сейчас ничего не играет'), t('Выберите фильм или музыку в медиатеке'))}
             <div class="chips" style="justify-content:center"><a class="chip" href="#/movies">${t('Фильмы')}</a><a class="chip" href="#/music">${t('Музыка')}</a><a class="chip" href="#/tv">${t('Сериалы')}</a><a class="chip" href="#/files">${t('Файлы')}</a></div>`);
           setBg(''); return;

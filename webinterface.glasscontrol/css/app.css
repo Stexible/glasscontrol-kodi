@@ -416,7 +416,7 @@ body.scanning #scan { display: inline-flex; } #scan i { width: 14px; height: 14p
 #lbar { position: fixed; z-index: 41; left: calc(var(--side) + 18px); right: 18px; bottom: 16px; padding: 10px 14px; display: none; align-items: center; gap: 14px; border-radius: 22px; max-width: 1200px; margin: 0 auto; }
 body.lplay #lbar { display: flex; } body.lplay.playing #lbar { bottom: 100px; }
 #lbar b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } #lbar .meta-l { flex: 1; min-width: 0; } #lbar input[type=range] { flex: 1.2; max-width: 360px; }
-#lvideo { position: fixed; z-index: 90; right: 18px; bottom: 170px; width: min(480px, 90vw); border-radius: 18px; background: #000; box-shadow: 0 20px 60px rgba(0, 0, 0, .6); display: none; resize: both; overflow: hidden; min-width: 200px; min-height: 120px; cursor: move; } body.lvid #lvideo { display: block; }
+#lvideo { position: fixed; z-index: 90; right: 18px; bottom: 170px; width: min(480px, 90vw); border-radius: 8px; background: #000; box-shadow: 0 20px 60px rgba(0, 0, 0, .6); display: none; resize: both; overflow: hidden; min-width: 200px; min-height: 120px; cursor: move; } body.lvid #lvideo { display: block; }
 @media (max-width: 1000px) { #lbar { left: 10px; right: 10px; bottom: calc(86px + env(safe-area-inset-bottom)); } body.lplay.playing #lbar { bottom: calc(160px + env(safe-area-inset-bottom)); } #lvideo { bottom: 250px; } }
 a.lnk { color: var(--accent); cursor: pointer; } a.lnk:hover { text-decoration: underline; }
 

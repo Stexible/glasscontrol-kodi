@@ -12,18 +12,23 @@
     document.body.appendChild(v); L.el = v;
     // drag
     (function () {
-      var dragging = false, ox = 0, oy = 0;
+      var dragging = false, ox = 0, oy = 0, moved = false;
       v.addEventListener('mousedown', function (e) {
-        if (e.target !== v) return;
-        dragging = true; ox = e.clientX - v.offsetLeft; oy = e.clientY - v.offsetTop; v.style.cursor = 'grabbing';
-        e.preventDefault();
+        if (e.button !== 0) return;
+        dragging = true; moved = false; ox = e.clientX - v.offsetLeft; oy = e.clientY - v.offsetTop; v.style.cursor = 'grabbing';
+        e.preventDefault(); e.stopPropagation();
       });
       document.addEventListener('mousemove', function (e) {
         if (!dragging) return;
+        if (Math.abs(e.clientX - (v.offsetLeft + ox)) > 3 || Math.abs(e.clientY - (v.offsetTop + oy)) > 3) moved = true;
         v.style.left = (e.clientX - ox) + 'px'; v.style.top = (e.clientY - oy) + 'px';
         v.style.right = 'auto'; v.style.bottom = 'auto';
       });
-      document.addEventListener('mouseup', function () { if (dragging) { dragging = false; v.style.cursor = 'move'; } });
+      document.addEventListener('mouseup', function (e) {
+        if (dragging) { dragging = false; v.style.cursor = 'move'; if (moved) { e.preventDefault(); e.stopPropagation(); } }
+      });
+      // Prevent click (play/pause) after drag
+      v.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
     })();
     v.addEventListener('ended', function () { L.next(true); });
     v.addEventListener('timeupdate', upd); v.addEventListener('play', upd); v.addEventListener('pause', upd); v.addEventListener('loadedmetadata', upd);
