@@ -180,6 +180,7 @@
           <button class="ctl-btn" data-act="lprev">${ic('prev', 20)}</button>
           <button class="ctl-btn big" data-act="lpp">${ic(playing ? 'pause' : 'play', 22)}</button>
           <button class="ctl-btn" data-act="lnext">${ic('next', 20)}</button>
+          ${it.kind === 'video' ? html`<button class="ctl-btn" data-act="ltheater" aria-label="${t('Кинотеатр')}">${ic('layers', 20)}</button><button class="ctl-btn" data-act="lfullscreen" aria-label="${t('На весь экран')}">${ic('fullscreen', 20)}</button>` : ''}
           <button class="ctl-btn" data-act="lstop">${ic('x', 20)}</button></div>
         <div class="mini-bar"><input type="range" min="0" max="1000" value="0" data-seekbar data-input="lseek" aria-label="${t('Перемотка')}"></div>`, 'lbrowser|' + it.file + '|' + playing + '|' + (v && v.muted) + '|' + (v ? Math.round(v.volume*100) : 100));
       return;
@@ -279,7 +280,6 @@
               <div class="now browser">
                 <div id="now-vslot" class="now-vslot"></div>
                 <div><h1 class="now-t">${it.title}</h1>${it.sub ? html`<div class="now-a">${it.sub}</div>` : ''}
-                <div class="transport"><button class="ctl-btn" data-act="lprev">${ic('prev',24)}</button><button class="ctl-btn big" data-act="lpp">${ic(K.local.el && K.local.el.paused ? 'play' : 'pause',26)}</button><button class="ctl-btn" data-act="lnext">${ic('next',24)}</button><button class="ctl-btn" data-act="lstop">${ic('x',22)}</button></div>
                 <p class="note">${t('Воспроизведение в браузере.')}</p></div></div>`);
             setBg('');
             var v = K.local.el;
@@ -291,8 +291,6 @@
             K.mount(view, html`${K.ui.head(t('Сейчас играет') + ' — ' + t('В браузере'))}
               <div class="now">
                 <div><div class="now-art">${ic('music', 64)}${it.thumb ? html`<img src="${K.img(it.thumb)}" alt="" onerror="this.remove()">` : ''}</div></div>
-                <div><h1 class="now-t">${it.title}</h1>${it.sub ? html`<div class="now-a">${it.sub}</div>` : ''}
-                <div class="transport"><button class="ctl-btn" data-act="lprev">${ic('prev',24)}</button><button class="ctl-btn big" data-act="lpp">${ic(K.local.el && K.local.el.paused ? 'play' : 'pause',26)}</button><button class="ctl-btn" data-act="lnext">${ic('next',24)}</button><button class="ctl-btn" data-act="lstop">${ic('x',22)}</button></div>
                 <p class="note">${t('Воспроизведение в браузере.')}</p></div></div>`);
             setBg('');
           }
