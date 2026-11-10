@@ -10,6 +10,21 @@
     if (L.el) return L.el;
     var v = document.createElement('video'); v.id = 'lvideo'; v.setAttribute('playsinline', ''); v.preload = 'auto'; v.controls = true;
     document.body.appendChild(v); L.el = v;
+    // drag
+    (function () {
+      var dragging = false, ox = 0, oy = 0;
+      v.addEventListener('mousedown', function (e) {
+        if (e.target !== v) return;
+        dragging = true; ox = e.clientX - v.offsetLeft; oy = e.clientY - v.offsetTop; v.style.cursor = 'grabbing';
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        v.style.left = (e.clientX - ox) + 'px'; v.style.top = (e.clientY - oy) + 'px';
+        v.style.right = 'auto'; v.style.bottom = 'auto';
+      });
+      document.addEventListener('mouseup', function () { if (dragging) { dragging = false; v.style.cursor = 'move'; } });
+    })();
     v.addEventListener('ended', function () { L.next(true); });
     v.addEventListener('timeupdate', upd); v.addEventListener('play', upd); v.addEventListener('pause', upd); v.addEventListener('loadedmetadata', upd);
     v.addEventListener('error', function () { K.toast(t('Браузер не может воспроизвести этот формат'), 'err'); });

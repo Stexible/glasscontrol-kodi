@@ -218,9 +218,19 @@
       var view = ctx.view, bg = null;
       function draw() {
         if (view.contains(document.activeElement) && document.activeElement.type === 'range' && P.drag) return;
-        if (P.id == null) {
+        if (P.id == null && !(K.target() === 'browser' && L && L.i >= 0)) {
           K.mount(view, html`${K.ui.head(t('Сейчас играет'))}${K.ui.empty('music', t('Сейчас ничего не играет'), t('Выберите фильм или музыку в медиатеке'))}
             <div class="chips" style="justify-content:center"><a class="chip" href="#/movies">${t('Фильмы')}</a><a class="chip" href="#/music">${t('Музыка')}</a><a class="chip" href="#/tv">${t('Сериалы')}</a><a class="chip" href="#/files">${t('Файлы')}</a></div>`);
+          setBg(''); return;
+        }
+        if (K.target() === 'browser' && K.local && K.local.i >= 0 && P.id == null) {
+          // Browser playback mode
+          var it = K.local.q[K.local.i];
+          K.mount(view, html`${K.ui.head(t('Сейчас играет') + ' — ' + t('В браузере'))}
+            <div class="now"><div><div class="now-art">${ic(it.kind === 'video' ? 'film' : 'music', 64)}</div></div>
+            <div><h1 class="now-t">${it.title}</h1>${it.sub ? html`<div class="now-a">${it.sub}</div>` : ''}
+            <div class="transport"><button class="ctl-btn" data-act="lprev">${ic('prev',24)}</button><button class="ctl-btn big" data-act="lpp">${ic(K.local.el && K.local.el.paused ? 'play' : 'pause',26)}</button><button class="ctl-btn" data-act="lnext">${ic('next',24)}</button><button class="ctl-btn" data-act="lstop">${ic('x',22)}</button></div>
+            <p class="note">${t('Воспроизведение в браузере. Видео отображается в плавающем окне.')}</p></div></div>`);
           setBg(''); return;
         }
         var pr = P.props, vid = P.type === 'video', pic = P.type === 'picture', sl = P.streamLine(), item = P.item;
