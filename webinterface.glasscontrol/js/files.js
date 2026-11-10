@@ -51,7 +51,7 @@
       <button class="btn sm" data-act="lclean" data-v="${libKind}" title="${t('Полностью сбросить базу медиатеки, чтобы собрать её заново')}">${ic('eraser', 16)} ${t('Очистить')}</button><button class="icon-btn" data-act="srcs" data-v="${media}" aria-label="${t('Источники')}" title="${t('Источники')}">${ic('sliders', 18)}</button></div>`;
     var title = o.title || t('Файлы');
     if (!path) {
-      var srcPromise = K.be.ok ? K.be.call('/api/sources/list', { media: media }).then(function (r) { return (r.sources || []).map(function (s) { return { label: s.name, file: (s.paths && s.paths[0]) || '' }; }); }).catch(function () { return null; }) : Promise.resolve(null);
+      var srcPromise = K.be.ok ? K.be.call('/api/sources/list', { media: media }).then(function (r) { return (r.sources || []).map(function (s) { return { label: s.name, file: (s.paths && s.paths[0]) || '' }; }); }).catch(function () { return null; }) : (K.be && K.be.retry ? K.be.retry().then(function (ok) { if (!ok) return null; return K.be.call('/api/sources/list', { media: media }).then(function (r) { return (r.sources || []).map(function (s) { return { label: s.name, file: (s.paths && s.paths[0]) || '' }; }); }).catch(function () { return null; }); }).catch(function () { return null; }) : Promise.resolve(null));
       return srcPromise.then(function (beSrc) {
         return K.rpc('Files.GetSources', { media: media }).then(function (r) {
           if (!ctx.alive()) return; var src = (beSrc !== null) ? beSrc : (r.sources || []);

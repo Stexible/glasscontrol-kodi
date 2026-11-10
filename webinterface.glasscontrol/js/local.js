@@ -16,10 +16,15 @@
     return v;
   }
   function url(file) {
-    if (K.be && K.be.ok) {
-      return Promise.resolve(K.be.base + '/api/fs/download?path=' + encodeURIComponent(file) + '&token=' + encodeURIComponent(K.be.token));
-    }
-    return K.rpc('Files.PrepareDownload', { path: file }).then(function (r) { return '/' + r.details.path; });
+    var beUrl = function () {
+      if (K.be && K.be.ok) return Promise.resolve(K.be.base + '/api/fs/download?path=' + encodeURIComponent(file) + '&token=' + encodeURIComponent(K.be.token));
+      if (K.be && K.be.retry) return K.be.retry().then(function (ok) { if (ok && K.be.ok) return K.be.base + '/api/fs/download?path=' + encodeURIComponent(file) + '&token=' + encodeURIComponent(K.be.token); return null; });
+      return Promise.resolve(null);
+    };
+    return beUrl().then(function (u) {
+      if (u) return u;
+      return K.rpc('Files.PrepareDownload', { path: file }).then(function (r) { return '/' + r.details.path; });
+    });
   }
   var KINDS = { movieid: [V + 'GetMovieDetails', 'moviedetails', 'video'], episodeid: [V + 'GetEpisodeDetails', 'episodedetails', 'video'], musicvideoid: [V + 'GetMusicVideoDetails', 'musicvideodetails', 'video'], songid: [A + 'GetSongDetails', 'songdetails', 'audio'] };
   var VID = /\.(mp4|m4v|webm|mkv|mov|avi|ogv|ts|m2ts)$/i;
