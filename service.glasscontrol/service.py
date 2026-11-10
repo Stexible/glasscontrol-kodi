@@ -70,19 +70,65 @@ class Handler(BaseHTTPRequestHandler):
                  '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.webm': 'video/webm', '.mkv': 'video/x-matroska', '.avi': 'video/x-msvideo', '.mov': 'video/quicktime', '.ts': 'video/mp2t', '.m2ts': 'video/mp2t', '.ogv': 'video/ogg'}
         ext = os.path.splitext(fpath)[1].lower()
         ct = mimetypes.guess_type(fpath)[0] or _MIME.get(ext) or 'application/octet-stream'
-        self.send_response(200)
+        # Range support for video/audio seeking
+        rng = self.headers.get('Range', '')
+        start = 0
+        end = size - 1 if size > 0 else 0
+        partial = False
+        if rng.startswith('bytes=') and size > 0:
+            try:
+                spec = rng[6:].split(',')[0].strip()
+                if '-' in spec:
+                    a, b = spec.split('-', 1)
+                    if a:
+                        start = int(a)
+                    if b:
+                        end = int(b)
+                    if start > end or start >= size:
+                        self.send_response(416)
+                        self._cors()
+                        self.send_header('Content-Range', 'bytes */%d' % size)
+                        self.end_headers()
+                        try: vf.close()
+                        except Exception: pass
+                        return
+                    partial = True
+                    if end >= size:
+                        end = size - 1
+            except ValueError:
+                partial = False
+        if size == 0:
+            self.send_response(200)
+            self._cors()
+            self.send_header('Content-Type', ct)
+            self.send_header('Content-Length', '0')
+            self.end_headers()
+            try: vf.close()
+            except Exception: pass
+            return
+        if partial:
+            self.send_response(206)
+            self.send_header('Content-Range', 'bytes %d-%d/%d' % (start, end, size))
+        else:
+            self.send_response(200)
         self._cors()
         self.send_header('Content-Type', ct)
-        self.send_header('Content-Length', str(size))
+        self.send_header('Content-Length', str(end - start + 1))
+        self.send_header('Accept-Ranges', 'bytes')
         self.send_header('Content-Disposition', 'inline')
         self.end_headers()
         try:
+            if start > 0:
+                vf.seek(start, 0)
+            remaining = end - start + 1
             chunk = 65536
-            while True:
-                data = vf.readBytes(chunk)
+            while remaining > 0:
+                toread = min(chunk, remaining)
+                data = vf.readBytes(toread)
                 if not data:
                     break
                 self.wfile.write(data)
+                remaining -= len(data)
         except Exception:
             pass
         try:
