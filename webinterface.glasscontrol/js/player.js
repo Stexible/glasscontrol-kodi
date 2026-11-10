@@ -228,22 +228,41 @@
     nav: 'now', title: function () { return t('Сейчас играет'); },
     render: function (ctx) {
       var view = ctx.view, bg = null;
+      ctx.cleanup.push(function () {
+        if (K.local && K.local._embedded) {
+          K.local._embedded = false;
+          var v = K.local.el;
+          if (v && v.parentNode !== document.body) { document.body.appendChild(v); v.classList.remove('embedded'); }
+        }
+      });
       function draw() {
         if (view.contains(document.activeElement) && document.activeElement.type === 'range' && P.drag) return;
         if (P.id == null && !(K.target() === 'browser' && K.local && K.local.i >= 0)) {
           K.mount(view, html`${K.ui.head(t('Сейчас играет'))}${K.ui.empty('music', t('Сейчас ничего не играет'), t('Выберите фильм или музыку в медиатеке'))}
             <div class="chips" style="justify-content:center"><a class="chip" href="#/movies">${t('Фильмы')}</a><a class="chip" href="#/music">${t('Музыка')}</a><a class="chip" href="#/tv">${t('Сериалы')}</a><a class="chip" href="#/files">${t('Файлы')}</a></div>`);
-          setBg(''); return;
+          setBg(''); 
+          // Move player back to floating if embedded
+          if (K.local && K.local._embedded) { K.local._embedded = false; var v = K.local.el; if (v && v.parentNode !== document.body) { document.body.appendChild(v); v.classList.remove('embedded'); } }
+          return;
         }
         if (K.target() === 'browser' && K.local && K.local.i >= 0 && P.id == null) {
-          // Browser playback mode
+          if (K.local._embedded) { setBg(''); return; }
+          // Browser playback mode — embed player in page
           var it = K.local.q[K.local.i];
           K.mount(view, html`${K.ui.head(t('Сейчас играет') + ' — ' + t('В браузере'))}
-            <div class="now"><div><div class="now-art">${ic(it.kind === 'video' ? 'film' : 'music', 64)}</div></div>
-            <div><h1 class="now-t">${it.title}</h1>${it.sub ? html`<div class="now-a">${it.sub}</div>` : ''}
-            <div class="transport"><button class="ctl-btn" data-act="lprev">${ic('prev',24)}</button><button class="ctl-btn big" data-act="lpp">${ic(K.local.el && K.local.el.paused ? 'play' : 'pause',26)}</button><button class="ctl-btn" data-act="lnext">${ic('next',24)}</button><button class="ctl-btn" data-act="lstop">${ic('x',22)}</button></div>
-            <p class="note">${t('Воспроизведение в браузере. Видео отображается в плавающем окне.')}</p></div></div>`);
-          setBg(''); return;
+            <div class="now">
+              <div id="now-vslot" class="now-vslot"></div>
+              <div><h1 class="now-t">${it.title}</h1>${it.sub ? html`<div class="now-a">${it.sub}</div>` : ''}
+              <div class="transport"><button class="ctl-btn" data-act="lprev">${ic('prev',24)}</button><button class="ctl-btn big" data-act="lpp">${ic(K.local.el && K.local.el.paused ? 'play' : 'pause',26)}</button><button class="ctl-btn" data-act="lnext">${ic('next',24)}</button><button class="ctl-btn" data-act="lstop">${ic('x',22)}</button></div>
+              <p class="note">${t('Воспроизведение в браузере.')}</p></div></div>`);
+          setBg('');
+          // Move floating player into the slot
+          var v = K.local.el;
+          if (v && !K.local._embedded) {
+            var slot = document.getElementById('now-vslot');
+            if (slot) { slot.appendChild(v); v.classList.add('embedded'); K.local._embedded = true; }
+          }
+          return;
         }
         var pr = P.props, vid = P.type === 'video', pic = P.type === 'picture', sl = P.streamLine(), item = P.item;
         var playing = pr.speed !== 0, thumb = P.thumb();
