@@ -659,7 +659,7 @@ def video_restore_content(db_dir):
 
 
 def textures_reset():
-    \"\"\"Удаляет повреждённую базу кэша текстур Kodi (Textures13.db) и её служебные файлы.\"\"\"
+    '''Удаляет повреждённую базу кэша текстур Kodi (Textures13.db) и её служебные файлы.'''
     try:
         import xbmcvfs
     except Exception:
