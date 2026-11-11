@@ -84,11 +84,12 @@
   /* страница из отдельных категорий Kodi */
   function groupPage(ctx, key, title, sub, cats, netinfo) {
     var level = K.store.get('level', 'standard');
-    return Promise.all(cats.map(function (c) { return K.rpc('Settings.GetSettings', { level: level, filter: { section: c[0], category: c[1] } }); })).then(function (rs) {
-      if (!ctx.alive()) return; var list = [].concat.apply([], rs.map(function (g) { return g.settings || []; }));
+    return Promise.all([K.rpc('Settings.GetSections', { level: level, properties: ['categories'] })].concat(cats.map(function (c) { return K.rpc('Settings.GetSettings', { level: level, filter: { section: c[0], category: c[1] } }); }))).then(function (all) {
+      if (!ctx.alive()) return; var secs = (all[0].sections || []); var rs = all.slice(1);
+      var list = [].concat.apply([], rs.map(function (g) { return g.settings || []; }));
       list.forEach(function (s) { K.sets[s.id] = s; });
       var net = netinfo ? html`<div class="glass panel" id="netinfo" style="margin-bottom:14px">${K.ui.loading()}</div>` : '';
-      K.mount(ctx.view, html`${K.ui.head(title, { sub: sub })}<div class="tabs">${extraTabs(key)}</div>${net}
+      K.mount(ctx.view, html`${K.ui.head(title, { sub: sub })}<div class="tabs">${secs.map(function (s) { return html`<a href="#/settings/${s.id}">${s.label}</a>`; })}${extraTabs(key)}</div>${net}
         <div class="glass panel setbody">${list.length ? list.map(settingRow) : K.ui.empty('sliders', t('Нет настроек на этом уровне'))}</div>${saveBar()}`);
       updSave();
       if (netinfo) K.rpc('XBMC.GetInfoLabels', { labels: ['Network.IPAddress', 'Network.MacAddress', 'Network.LinkState', 'Network.SubnetMask', 'Network.GatewayAddress', 'Network.DNS1Address', 'System.FriendlyName'] }).then(function (L) {
@@ -100,7 +101,10 @@
   /* оформление этого интерфейса */
   function lookPage(ctx) {
     var mode = K.theme.mode, acc = K.theme.accent;
-    K.mount(ctx.view, html`${K.ui.head(t('Настройки'), { sub: t('Оформление интерфейса') })}<div class="tabs">${extraTabs('look')}</div>
+    var level = K.store.get('level', 'standard');
+    K.rpc('Settings.GetSections', { level: level, properties: ['categories'] }).then(function (r) {
+      if (!ctx.alive()) return; var secs = r.sections || [];
+      K.mount(ctx.view, html`${K.ui.head(t('Настройки'), { sub: t('Оформление интерфейса') })}<div class="tabs">${secs.map(function (s) { return html`<a href="#/settings/${s.id}">${s.label}</a>`; })}${extraTabs('look')}</div>
       <div class="glass panel"><h3 class="ph3">${t('Тема')}</h3>${K.ui.seg([['dark', t('Тёмная')], ['light', t('Светлая')], ['auto', t('Авто')]], mode, 'themeset')}
         <h3 class="ph3" style="margin-top:22px">${t('Акцентный цвет')}</h3><div class="swatches">${K.ACCENTS.map(function (a) { return html`<button class="swatch ${a.id === acc ? 'on' : ''}" data-act="accset" data-v="${a.id}" style="--c:rgb(${a.ac.join(',')})" aria-label="${a.id}" title="${a.id}"><i></i></button>`; })}</div>
         <div class="glass panel" style="margin-top:14px"><h3 class="ph3">${t('Видимость пунктов меню')}</h3>
@@ -111,6 +115,7 @@
         <p class="note">${t('Скрытые пункты не будут отображаться в боковом меню и нижней панели. Настройки хранятся в браузере.')}</p></div>
       <div class="glass panel" style="margin-top:14px"><h3 class="ph3">${t('События в реальном времени')}</h3><label class="field"><span>${t('Порт событий (WebSocket, TCP)')}</span><div class="grp"><input class="inp" id="wsp" type="number" value="${K.store.get('wsport', 9090)}"><button class="btn" data-act="wsport">OK</button></div></label>
         <p class="note">${K.events && K.events.ok ? t('События в реальном времени: подключено') : t('События: нет WebSocket — используется периодический опрос. Включите «Разрешить управление с других систем» в Настройки → Службы → Управление.')}</p></div>`);
+    });
   }
   K.acts.themeset = function (el) { K.theme.set('theme', el.dataset.v); K.route(true); };
   K.acts.accset = function (el) { K.theme.set('accent', el.dataset.v); K.route(true); };
@@ -200,9 +205,10 @@
     });
   };
   function skinPage(ctx) {
-    return K.rpc('Settings.GetSkinSettings').then(function (r) {
-      if (!ctx.alive()) return; var l = (r.settings || []).sort(function (a, b) { return a.id.localeCompare(b.id); }); K.skin = {}; l.forEach(function (s) { K.skin[s.id] = s; });
-      K.mount(ctx.view, html`${K.ui.head(t('Настройки'), { sub: t('Скин') + ': ' + r.skin })}<div class="tabs">${extraTabs('skin')}</div>
+    var level = K.store.get('level', 'standard');
+    return Promise.all([K.rpc('Settings.GetSkinSettings'), K.rpc('Settings.GetSections', { level: level, properties: ['categories'] })]).then(function (all) {
+      if (!ctx.alive()) return; var r = all[0], secs = all[1].sections || []; var l = (r.settings || []).sort(function (a, b) { return a.id.localeCompare(b.id); }); K.skin = {}; l.forEach(function (s) { K.skin[s.id] = s; });
+      K.mount(ctx.view, html`${K.ui.head(t('Настройки'), { sub: t('Скин') + ': ' + r.skin })}<div class="tabs">${secs.map(function (s) { return html`<a href="#/settings/${s.id}">${s.label}</a>`; })}${extraTabs('skin')}</div>
         <div class="glass panel">${l.length ? l.map(function (s) {
           return html`<div class="setrow"><div class="setrow-t"><b>${s.id}</b></div><div class="setrow-c">${s.type === 'boolean' ? K.ui.sw(s.value, 'data-act="skintog" data-id="' + s.id + '"') : html`<input class="inp" type="text" value="${s.value}" data-change="skinv" data-id="${s.id}">`}</div></div>`; }) : K.ui.empty('sliders', t('У скина нет настроек'))}</div>`);
     });
