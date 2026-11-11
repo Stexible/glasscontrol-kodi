@@ -251,7 +251,7 @@
         }
       });
       function draw() {
-        if (view.contains(document.activeElement) && document.activeElement.type === 'range' && P.drag) return;
+        if (view.contains(document.activeElement) && document.activeElement.type === 'range' && (P.drag || (K.local && K.local.drag))) return;
         if (P.id == null && !(K.target() === 'browser' && K.local && K.local.i >= 0)) {
           K.mount(view, html`${K.ui.head(t('Сейчас играет'))}${K.ui.empty('music', t('Сейчас ничего не играет'), t('Выберите фильм или музыку в медиатеке'))}
             <div class="chips" style="justify-content:center"><a class="chip" href="#/movies">${t('Фильмы')}</a><a class="chip" href="#/music">${t('Музыка')}</a><a class="chip" href="#/tv">${t('Сериалы')}</a><a class="chip" href="#/files">${t('Файлы')}</a></div>`);
@@ -288,11 +288,37 @@
               if (slot) { v.style.left = ''; v.style.top = ''; v.style.right = ''; v.style.bottom = ''; slot.appendChild(v); v.classList.add('embedded'); K.local._embedded = true; K.local._embeddedFile = it.file; }
             }
           } else {
+            var v = K.local.el, playing = !(v && v.paused);
             K.mount(view, html`${K.ui.head(t('Сейчас играет') + ' — ' + t('В браузере'))}
               <div class="now">
-                <div><div class="now-art">${ic('music', 64)}${it.thumb ? html`<img src="${K.img(it.thumb)}" alt="" onerror="this.remove()">` : ''}</div></div>
-                <p class="note">${t('Воспроизведение в браузере.')}</p></div></div>`);
+                <div><div class="now-art">${ic('music', 64)}${it.thumb ? html`<img src="${K.img(it.thumb)}" alt="" onerror="this.remove()">` : ''}</div>
+                  ${html`<div class="glass now-eq"><div class="eq ${playing ? '' : 'paused'}">${eqBars(64, 11)}</div></div>`}</div>
+                <div>
+                  <h1 class="now-t">${it.title}</h1>
+                  ${it.sub ? html`<div class="now-a">${it.sub}</div>` : ''}
+                  <div class="seek"><span data-tpos>${v ? K.fmtTime(v.currentTime || 0) : '0:00'}</span><input type="range" min="0" max="1000" value="${v && v.duration ? Math.round((v.currentTime / v.duration) * 1000) : 0}" data-seekbar data-input="lseek" aria-label="${t('Перемотка')}"><span>${v && v.duration ? K.fmtTime(v.duration) : '∞'}</span></div>
+                  <div class="transport">
+                    <button class="ctl-btn" data-act="lprev" aria-label="${t('Предыдущий')}">${ic('prev', 24)}</button>
+                    <button class="ctl-btn big" data-act="lpp" aria-label="${t('Пауза')}">${ic(playing ? 'pause' : 'play', 26)}</button>
+                    <button class="ctl-btn" data-act="lnext" aria-label="${t('Следующий')}">${ic('next', 24)}</button>
+                    <button class="ctl-btn" data-act="lstop" aria-label="${t('Стоп')}">${ic('stop', 22)}</button>
+                  </div>
+                  <div class="now-opts">
+                    <div class="grp vol"><button class="icon-btn" data-act="lmute" aria-label="${t('Звук')}">${ic(v && v.muted ? 'mute' : 'volume')}</button>
+                      <input type="range" min="0" max="100" value="${v ? Math.round(v.volume * 100) : 100}" style="--p:${v ? v.volume * 100 : 100}%" data-input="lvolset" aria-label="${t('Громкость')}"><span class="row-s" data-volnum style="min-width:28px">${v ? Math.round(v.volume * 100) : 100}</span></div>
+                  </div>
+                </div></div>
+              <div id="now-q"></div>`);
             setBg('');
+            // playlist at bottom
+            var box = document.getElementById('now-q');
+            if (box && K.local.q && K.local.q.length) {
+              K.mount(box, html`${K.ui.sec(t('Очередь'), html`<a class="btn sm ghost" href="#/queue">${t('Управление')}</a>`)}
+                <div class="glass panel list" style="padding:8px">${K.local.q.map(function (it, i) {
+                  return K.ui.row({ cls: i === K.local.i ? 'cur' : '', lead: i === K.local.i ? ic('play', 14) : i + 1, img: it.thumb || '', icon: 'music', title: it.title || it.label,
+                    sub: it.sub || '', attrs: 'style="cursor:pointer" data-act="lqgoto" data-i="' + i + '"' });
+                })}</div>`);
+            }
           }
           return;
         }
