@@ -198,19 +198,24 @@ class Handler(BaseHTTPRequestHandler):
                     res['content'] = ops.video_content_map(db_dir())
                 return self._send(200, res)
             if path == '/api/sources/add':
+                xbmc.log('[glasscontrol] sources.add start: %s %s' % (d.get('media'), d.get('name')), xbmc.LOGINFO)
                 res = ops.sources_add(sources_xml(), d['media'], d['name'], d['path'], passwords_xml())
                 content = d.get('content') or ''
                 if d['media'] == 'video' and content:
                     res['content'] = ops.set_video_content(db_dir(), res['path'], content)
                 if d['media'] == 'music':
                     res['music'] = ops.fix_music_paths(db_dir(), sources_xml())
+                xbmc.log('[glasscontrol] sources.add done: %s' % (res,), xbmc.LOGINFO)
                 return self._send(200, res)
             if path == '/api/sources/remove':
                 return self._send(200, ops.sources_remove(sources_xml(), d['media'], d['name'], d.get('path', ''), passwords_xml()))
             if path == '/api/sources/content':
                 return self._send(200, ops.set_video_content(db_dir(), d['path'], d.get('content', ''), d.get('scraper', '')))
             if path == '/api/lib/fix':
-                return self._send(200, ops.lib_fix(db_dir(), sources_xml(), passwords_xml(), d.get('kind', '')))
+                xbmc.log('[glasscontrol] lib.fix start: %s' % (d.get('kind'),), xbmc.LOGINFO)
+                res = ops.lib_fix(db_dir(), sources_xml(), passwords_xml(), d.get('kind', ''))
+                xbmc.log('[glasscontrol] lib.fix done: %s' % (res,), xbmc.LOGINFO)
+                return self._send(200, res)
             if path == '/api/lib/reset':
                 return self._send(200, ops.lib_reset(db_dir(), d.get('kind', '')))
             if path == '/api/debug':

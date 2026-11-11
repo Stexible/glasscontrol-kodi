@@ -318,9 +318,9 @@ def _db_opt(db_dir, kind):
 
 def _db_connect(db):
     import sqlite3
-    con = sqlite3.connect(db, timeout=30)
+    con = sqlite3.connect(db, timeout=5)
     try:
-        con.execute('PRAGMA busy_timeout=30000')
+        con.execute('PRAGMA busy_timeout=5000')
     except Exception:
         pass
     return con
