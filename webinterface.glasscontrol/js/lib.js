@@ -335,7 +335,7 @@
             <button class="btn sm" data-act="cplay" data-k="${ak}">${ic('play', 16)} ${t('Играть альбом')}</button><button class="icon-btn" data-act="cmenu" data-k="${ak}">${ic('more', 18)}</button></div>
             <div class="glass panel list" style="padding:6px">${list.map(function (s) {
               var i = idx++, k = K.reg('song', s);
-              return K.ui.row({ lead: s.track || '', title: s.title, right: html`<span class="row-s">${K.fmtTime(s.duration)}</span><button class="icon-btn" data-act="cmenu" data-k="${k}">${ic('more', 18)}</button>`, attrs: 'data-act="artistplay" data-i="' + i + '" style="cursor:pointer"' }); })}</div></div>`; })}`);
+              return K.ui.row({ lead: s.track || '', title: s.title, right: html`<span class="row-s">${K.fmtTime(s.duration)}</span><button class="icon-btn" data-act="cmenu" data-k="${k}">${ic('more', 18)}</button>`, attrs: 'data-act="cplay" data-k="' + k + '" style="cursor:pointer"' }); })}</div></div>`; })}`);
     });
   }
   /* порядок очереди совпадает с порядком показа (по альбомам) */
