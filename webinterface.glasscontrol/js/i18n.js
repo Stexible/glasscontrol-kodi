@@ -8,7 +8,9 @@
   K.lang = saved || ((navigator.language || 'ru').toLowerCase().indexOf('ru') === 0 ? 'ru' : 'en');
   K.setLang = function (l) {
     try { localStorage.setItem('glass.lang', l); } catch (e) { /* ignore */ }
-    location.reload();
+    K.lang = l;
+    try { if (K.drawNav) K.drawNav(); } catch (e) { /* ignore */ }
+    try { K.route(true); } catch (e) { /* ignore */ }
   };
   K.t = function (s, p) {
     var r = (K.lang === 'ru') ? s : (K.EN[s] || s);

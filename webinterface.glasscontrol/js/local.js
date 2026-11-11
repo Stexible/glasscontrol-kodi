@@ -98,6 +98,7 @@
   K.acts.ltheater = function () { L.theater = !L.theater; var v = L.el; if (v) v.classList.toggle('theater', L.theater); var slot = document.getElementById('now-vslot'); if (slot) slot.classList.toggle('theater', L.theater); K.emit('local'); };
   K.acts.lfullscreen = function () { var v = L.el; if (!v) return; if (document.fullscreenElement || document.webkitFullscreenElement) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } else { (v.requestFullscreen || v.webkitRequestFullscreen || v.msRequestFullscreen).call(v); } };
   K.acts.lqgoto = function (el) { L.i = +el.dataset.i; return L.load(); };
+  K.acts.lqclear = function () { L.stop(); K.route(true); };
   K.acts.laud = function () { var v = L.el; if (!v) return; if (v.audioTracks && v.audioTracks.length > 1) { var cur = (typeof v.audioTracks.selectedIndex === 'number') ? v.audioTracks.selectedIndex : 0; var next = (cur + 1) % v.audioTracks.length; for (var i = 0; i < v.audioTracks.length; i++) v.audioTracks[i].enabled = (i === next); K.toast(t('Аудиодорожка') + ' ' + (next + 1) + '/' + v.audioTracks.length, 'ok'); } else { K.toast(t('Выбор озвучки недоступен в браузере'), 'err'); } };
   K.acts.lseek = function (e) { var v = el(); L.drag = true; clearTimeout(L._d); L._d = setTimeout(function () { L.drag = false; }, 400); if (v.duration) v.currentTime = e.value / 1000 * v.duration; };
 

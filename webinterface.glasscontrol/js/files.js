@@ -299,6 +299,14 @@
 
   /* ---------- Очередь ---------- */
   K.pages.queue = { title: function () { return t('Очередь'); }, render: function (ctx) {
+    if (K.target() === 'browser' && K.local && K.local.q && K.local.q.length) {
+      var items = K.local.q, cur = K.local.i;
+      K.mount(ctx.view, html`${K.ui.head(t('Очередь'), { sub: items.length + ' ' + t('элементов') + ' (' + t('браузер') + ')', right: html`<button class="btn sm danger" data-act="lqclear">${ic('trash', 16)} ${t('Очистить')}</button>` })}
+        <div class="glass panel list" style="padding:8px">${items.map(function (it, i) {
+          return K.ui.row({ cls: i === cur ? 'cur' : '', lead: i === cur ? ic('play', 14) : i + 1, img: it.thumb || '', icon: it.kind === 'video' ? 'film' : 'music', title: it.title || it.label,
+            sub: it.sub || '', attrs: 'data-act="lqgoto" data-i="' + i + '" style="cursor:pointer"' }); })}</div>`);
+      return;
+    }
     var pl = ctx.q.pl != null ? +ctx.q.pl : (K.player.props && K.player.props.playlistid === 1 ? 1 : 0);
     return K.rpc('Playlist.GetItems', { playlistid: pl, properties: ['title', 'artist', 'album', 'showtitle', 'season', 'episode', 'art', 'thumbnail', 'duration', 'runtime'] }).then(function (r) {
       if (!ctx.alive()) return; var items = r.items || [], cur = K.player.id != null && K.player.props && K.player.props.playlistid === pl ? K.player.props.position : -1;
