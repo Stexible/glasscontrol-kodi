@@ -175,7 +175,7 @@
       K.mount(m, html`<div class="mini-art">${ic(it.kind === 'video' ? 'film' : 'music', 22)}${it.thumb ? html`<img src="${K.img(it.thumb)}" alt="" onerror="this.remove()">` : ''}</div>
         <div class="mini-info"><b>${it.title}</b><small>${t('В браузере')}${it.sub ? ' · ' + it.sub : ''} · ${K.local.i + 1}/${K.local.q.length}</small></div>
         <span class="mini-time" data-pos2></span>
-        <div class="mini-vol"><button class="ctl-btn" data-act="lmute" aria-label="${t('Звук')}">${ic(v && v.muted ? 'mute' : 'volume', 20)}</button><input type="range" min="0" max="100" value="${v ? Math.round(v.volume * 100) : 100}" style="--p:${v ? v.volume * 100 : 100}%" data-input="lvolset" aria-label="${t('Громкость')}"></div>
+        <div class="mini-vol"><button class="ctl-btn" data-act="lmute" aria-label="${t('Звук')}">${ic(v && v.muted ? 'mute' : 'volume', 20)}</button><input type="range" min="0" max="100" value="${v ? Math.round(v.volume * 100) : 100}" style="--p:${v ? v.volume * 100 : 100}%" data-input="lvolset" data-change="lvolset" aria-label="${t('Громкость')}"></div>
         <div class="mini-ctl">
           <button class="ctl-btn" data-act="lprev">${ic('prev', 20)}</button>
           <button class="ctl-btn big" data-act="lpp">${ic(playing ? 'pause' : 'play', 22)}</button>
@@ -305,7 +305,7 @@
                   </div>
                   <div class="now-opts">
                     <div class="grp vol"><button class="icon-btn" data-act="lmute" aria-label="${t('Звук')}">${ic(v && v.muted ? 'mute' : 'volume')}</button>
-                      <input type="range" min="0" max="100" value="${v ? Math.round(v.volume * 100) : 100}" style="--p:${v ? v.volume * 100 : 100}%" data-input="lvolset" aria-label="${t('Громкость')}"><span class="row-s" data-volnum style="min-width:28px">${v ? Math.round(v.volume * 100) : 100}</span></div>
+                      <input type="range" min="0" max="100" value="${v ? Math.round(v.volume * 100) : 100}" style="--p:${v ? v.volume * 100 : 100}%" data-input="lvolset" data-change="lvolset" aria-label="${t('Громкость')}"><span class="row-s" data-volnum style="min-width:28px">${v ? Math.round(v.volume * 100) : 100}</span></div>
                   </div>
                 </div></div>
               <div id="now-q"></div>`);
