@@ -94,7 +94,7 @@
   function upd() { K.emit('local'); }
   K.acts.lprev = L.prev; K.acts.lnext = function () { L.next(); }; K.acts.lstop = L.stop; K.acts.lpp = L.toggle;
   K.acts.lmute = function () { var v = L.el; if (v) { v.muted = !v.muted; K.emit('local'); } };
-  K.acts.lvolset = function (e) { var v = L.el; if (v) { v.volume = e.value / 100; v.muted = false; e.style.setProperty('--p', e.value + '%'); } };
+  K.acts.lvolset = function (e) { var v = L.el; if (v) { v.volume = e.value / 100; v.muted = false; e.style.setProperty('--p', e.value + '%'); K.emit('local'); } };
   K.acts.ltheater = function () { L.theater = !L.theater; var v = L.el; if (v) v.classList.toggle('theater', L.theater); var slot = document.getElementById('now-vslot'); if (slot) slot.classList.toggle('theater', L.theater); K.emit('local'); };
   K.acts.lfullscreen = function () { var v = L.el; if (!v) return; if (document.fullscreenElement || document.webkitFullscreenElement) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } else { (v.requestFullscreen || v.webkitRequestFullscreen || v.msRequestFullscreen).call(v); } };
   K.acts.lqgoto = function (el) { L.i = +el.dataset.i; return L.load(); };
