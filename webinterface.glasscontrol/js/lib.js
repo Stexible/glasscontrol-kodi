@@ -9,7 +9,7 @@
   var SHOW_P = ['title', 'year', 'art', 'playcount', 'episode', 'watchedepisodes', 'rating', 'genre', 'dateadded'];
   var SHOW_D = SHOW_P.concat(['plot', 'mpaa', 'studio', 'cast', 'premiered', 'originaltitle', 'file', 'season']);
   var EP_P = ['title', 'showtitle', 'season', 'episode', 'art', 'playcount', 'resume', 'runtime', 'firstaired', 'tvshowid', 'rating', 'plot', 'dateadded'];
-  var ALBUM_P = ['title', 'artist', 'year', 'art', 'genre', 'rating', 'albumlabel', 'playcount', 'dateadded', 'songcount'];
+  var ALBUM_P = ['title', 'artist', 'year', 'art', 'genre', 'rating', 'albumlabel', 'playcount', 'dateadded'];
   var MV_P = ['title', 'artist', 'year', 'art', 'runtime', 'playcount', 'genre', 'album', 'dateadded'];
 
   function run(m, p) { return K.rpc(m, p); }
@@ -30,15 +30,18 @@
   }
   function albumCard(a) {
     var sub = [K.join(a.artist), a.year || ''].filter(Boolean).join(' · ');
-    if (a.songcount != null) sub = (sub ? sub + ' · ' : '') + a.songcount + ' ' + t('треков');
+    var cnt = K.albumSongCount && K.albumSongCount[a.albumid];
+    if (cnt != null) sub = (sub ? sub + ' · ' : '') + cnt + ' ' + t('треков');
     return K.ui.card({ key: K.reg('album', a), shape: 'sq', icon: 'disc', img: K.pick(a, 'thumb'), title: a.title, sub: sub, href: '#/music/album/' + a.albumid });
   }
   function artistCard(a) {
     return K.ui.card({ key: K.reg('artist', a), shape: 'sq circle', icon: 'mic', img: K.pick(a, 'thumb'), title: a.artist, href: '#/music/artist/' + a.artistid });
   }
   function artistRow(a) {
-    var cnt = a.songcount != null ? a.songcount : (a.songs != null ? a.songs : '');
-    return K.ui.row({ img: K.pick(a, 'thumb'), shape: 'circle', icon: 'mic', title: a.artist, sub: cnt !== '' ? (cnt + ' ' + t('треков')) : (a.genre || []).join(', '), href: '#/music/artist/' + a.artistid });
+    var id = Array.isArray(a.artistid) ? a.artistid[0] : a.artistid;
+    var cnt = (K.artistSongCount && id != null) ? K.artistSongCount[id] : null;
+    var sub = cnt != null ? (cnt + ' ' + t('треков')) : (a.genre || []).join(', ');
+    return K.ui.row({ img: K.pick(a, 'thumb'), shape: 'circle', icon: 'mic', title: a.artist, sub: sub, href: '#/music/artist/' + a.artistid });
   }
   function mvCard(m) {
     return K.ui.card({ key: K.reg('musicvideo', m), shape: 'land', icon: 'clip', img: K.pick(m, 'thumb', 'poster'), title: m.title, sub: K.join(m.artist), watched: m.playcount > 0 });
@@ -203,11 +206,19 @@
     if (a === 'album' && ctx.args[1]) return albumDetail(ctx, +ctx.args[1]);
     if (a === 'artist' && ctx.args[1]) return artistDetail(ctx, +ctx.args[1]);
     var G = [A + 'GetGenres', {}];
-    if (a === 'artists') return listPage({ title: function () { return t('Музыка'); }, sec: 'music', tabs: function () { return musicTabs('artists'); }, icon: 'mic', method: A + 'GetArtists', key: 'artists', props: ['thumbnail', 'art', 'genre', 'songcount'], sort: 'artist', sorts: [['artist', 'По имени'], ['dateadded', 'Недавно добавленные'], ['random', 'Случайно']], sfield: 'artist', genres: G, card: artistRow, cls: 'list glass panel' })(ctx);
+    if (a === 'artists') return K.rpc(A + 'GetSongs', { properties: ['artistid'], limits: { start: 0, end: 100000 } }).then(function (r) {
+      var counts = {}; (r.songs || []).forEach(function (s) { var id = Array.isArray(s.artistid) ? s.artistid[0] : s.artistid; if (id != null) counts[id] = (counts[id] || 0) + 1; });
+      K.artistSongCount = counts;
+      return listPage({ title: function () { return t('Музыка'); }, sec: 'music', tabs: function () { return musicTabs('artists'); }, icon: 'mic', method: A + 'GetArtists', key: 'artists', props: ['thumbnail', 'art', 'genre'], sort: 'artist', sorts: [['artist', 'По имени'], ['dateadded', 'Недавно добавленные'], ['random', 'Случайно']], sfield: 'artist', genres: G, card: artistRow, cls: 'list glass panel' })(ctx);
+    });
     if (a === 'songs') return listPage({ title: function () { return t('Музыка'); }, sec: 'music', tabs: function () { return musicTabs('songs'); }, icon: 'music', method: A + 'GetSongs', key: 'songs', props: ['title', 'artist', 'album', 'albumid', 'duration', 'track', 'thumbnail', 'art', 'file', 'year', 'genre'], sort: 'title', orders: ADESC, sorts: [['title', 'По названию'], ['artist', 'По исполнителю'], ['album', 'По альбому'], ['dateadded', 'Недавно добавленные'], ['random', 'Случайно']], genres: G, cls: 'list glass panel', size: 80, card: songRowK,
       groups: [{ id: 'artist', label: 'По исполнителю', method: 'artist', key: function (m) { return K.join(m.artist); } }, { id: 'album', label: 'По альбому', method: 'album', key: function (m) { return m.album || ''; } }] })(ctx);
-    return listPage({ title: function () { return t('Музыка'); }, sec: 'music', tabs: function () { return musicTabs('albums'); }, icon: 'disc', method: A + 'GetAlbums', key: 'albums', props: ALBUM_P, sort: 'title', orders: ADESC, sorts: MSORT, genres: G, card: albumCard, cls: 'grid sq', sfield: 'album', defaultGroup: 'artist',
-      groups: [{ id: 'artist', label: 'По исполнителю', method: 'artist', key: function (a) { return K.join(a.artist); } }, { id: 'year', label: 'По году', method: 'year', key: function (a) { return a.year || ''; } }, { id: 'genre', label: 'По жанру', method: 'genre', key: function (a) { return (a.genre || [])[0] || ''; } }] })(ctx);
+    return K.rpc(A + 'GetSongs', { properties: ['albumid'], limits: { start: 0, end: 100000 } }).then(function (r) {
+      var counts = {}; (r.songs || []).forEach(function (s) { if (s.albumid != null) counts[s.albumid] = (counts[s.albumid] || 0) + 1; });
+      K.albumSongCount = counts;
+      return listPage({ title: function () { return t('Музыка'); }, sec: 'music', tabs: function () { return musicTabs('albums'); }, icon: 'disc', method: A + 'GetAlbums', key: 'albums', props: ALBUM_P, sort: 'title', orders: ADESC, sorts: MSORT, genres: G, card: albumCard, cls: 'grid sq', sfield: 'album', defaultGroup: 'artist',
+        groups: [{ id: 'artist', label: 'По исполнителю', method: 'artist', key: function (a) { return K.join(a.artist); } }, { id: 'year', label: 'По году', method: 'year', key: function (a) { return a.year || ''; } }, { id: 'genre', label: 'По жанру', method: 'genre', key: function (a) { return (a.genre || [])[0] || ''; } }] })(ctx);
+    });
   } };
 
   /* ---------- детальные страницы ---------- */
