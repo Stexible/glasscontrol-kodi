@@ -108,8 +108,9 @@
       <div class="glass panel"><h3 class="ph3">${t('Тема')}</h3>${K.ui.seg([['dark', t('Тёмная')], ['light', t('Светлая')], ['auto', t('Авто')]], mode, 'themeset')}
         <h3 class="ph3" style="margin-top:22px">${t('Акцентный цвет')}</h3><div class="swatches">${K.ACCENTS.map(function (a) { return html`<button class="swatch ${a.id === acc ? 'on' : ''}" data-act="accset" data-v="${a.id}" style="--c:rgb(${a.ac.join(',')})" aria-label="${a.id}" title="${a.id}"><i></i></button>`; })}</div>
         <div class="glass panel" style="margin-top:14px"><h3 class="ph3">${t('Видимость пунктов меню')}</h3>
-        <div class="chips tight">${(K.NAV || []).filter(function (x) { return x && x !== 0; }).map(function (x) {
-          var hidden = (K.store.get('hiddenNav', []) || []).indexOf(x[0]) >= 0;
+        <div class="chips tight">${(K.NAV || []).filter(function (x) { return x && x !== 0 && x[0] !== '/settings'; }).map(function (x) {
+          var hiddenDefault = (K.st && K.st.nopvr && x[0] === '/pvr') ? ['/pvr'] : [];
+          var hidden = (K.store.get('hiddenNav', hiddenDefault) || []).indexOf(x[0]) >= 0;
           return html`<button class="chip ${hidden ? '' : 'on'}" data-act="navtoggle" data-v="${x[0]}">${ic(x[1], 16)} ${t(x[2])}</button>`;
         })}</div>
         <p class="note">${t('Скрытые пункты не будут отображаться в боковом меню и нижней панели. Настройки хранятся в браузере.')}</p></div>

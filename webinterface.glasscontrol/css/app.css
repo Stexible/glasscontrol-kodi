@@ -370,6 +370,9 @@ hr.sep { border: 0; height: 1px; background: var(--stroke); margin: 8px 6px; }
 :root[data-theme="light"] .hero-bg::after, :root[data-theme="light"] .now-bg { filter: none; }
 :root[data-theme="light"] .hero-bg::after { background: linear-gradient(180deg, rgba(233, 240, 245, .3), rgba(233, 240, 245, .96) 96%), linear-gradient(90deg, rgba(233, 240, 245, .85), transparent 70%); }
 :root[data-theme="light"] .modal-wrap { background: rgba(20, 40, 55, .35); }
+:root[data-theme="light"] .modal { background: linear-gradient(158deg, rgba(255, 255, 255, .92), rgba(236, 244, 250, .95)); color: #11222e; }
+:root[data-theme="light"] .modal-h, :root[data-theme="light"] .modal-b { color: #11222e; }
+:root[data-theme="light"] .menu-it { color: #11222e; }
 :root[data-theme="light"] .logbox { background: rgba(255, 255, 255, .6); }
 
 /* ---------- v1.1: списки, группы, анимации, настройки, пульт ---------- */

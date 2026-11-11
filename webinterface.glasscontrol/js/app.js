@@ -43,8 +43,10 @@
   function seg(path) { return '/' + (path.split('/')[1] || ''); }
   function drawNav() {
     var cur = seg(K.cur.path), pl = K.player && K.player.id != null, hidePvr = K.st.nopvr;
-    var hidden = K.store.get('hiddenNav', []) || [];
-    var n = NAV.filter(function (x) { return x === 0 || (x && hidden.indexOf(x[0]) < 0 && !(x[0] === '/pvr' && hidePvr)); });
+    var hidden = K.store.get('hiddenNav', null);
+    if (hidden === null) hidden = hidePvr ? ['/pvr'] : [];
+    hidden = hidden || [];
+    var n = NAV.filter(function (x) { return x === 0 || (x && hidden.indexOf(x[0]) < 0); });
     K.mount($('#nav'), html`<div class="brand"><div class="brand-logo">${ic('play', 20)}</div><div><b>Glass Control</b><small>Kodi</small></div></div>
       ${n.map(function (x) { return x ? html`<a class="nv ${x[0] === cur ? 'on' : ''}" href="#${x[0]}">${ic(x[1], 20)}<span>${t(x[2])}</span>${x[0] === '/now' && pl ? html`<i class="dot"></i>` : ''}</a>` : html`<hr class="sep">`; })}
       <div class="side-foot"><div class="seg">${['ru', 'en'].map(function (l) { return html`<button class="${K.lang === l ? 'on' : ''}" data-act="lang" data-v="${l}">${l.toUpperCase()}</button>`; })}</div><span id="ver">${K.st.verText || ''}</span></div>`, 'nav|' + cur + '|' + !!pl + '|' + !!hidePvr + '|' + K.lang + '|' + (K.st.verText || '') + '|' + hidden.join(','));
