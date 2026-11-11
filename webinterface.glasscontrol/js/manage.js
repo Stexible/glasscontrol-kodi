@@ -341,9 +341,30 @@
     var b = $('.logbox'); if (b) b.scrollTop = b.scrollHeight; var d = $('#logdl'); if (d) d.href = K.logUrl || '#';
   }
   K.acts.logf = function (el) { logF = el.dataset.v; drawLog(); };
+  function fetchLog() {
+    var url = K.logUrl;
+    return fetch(url, { headers: { 'X-Token': (K.be && K.be.token) ? K.be.token : '' }, cache: 'no-store' });
+  }
   K.acts.logload = function () {
-    return K.rpc('Files.PrepareDownload', { path: 'special://logpath/kodi.log' }).then(function (r) {
-      K.logUrl = '/' + r.details.path; return fetch(K.logUrl, { cache: 'no-store' });
+    var useBe = K.be && K.be.ok;
+    var p = useBe ? Promise.resolve(true) : (K.be ? K.be.init() : Promise.resolve(false));
+    return p.then(function (ok) {
+      if (ok && K.be && K.be.ok) {
+        K.logUrl = K.be.base + '/api/fs/download?path=' + encodeURIComponent('special://logpath/kodi.log') + '&token=' + encodeURIComponent(K.be.token);
+        return fetchLog();
+      }
+      return K.rpc('Files.PrepareDownload', { path: 'special://logpath/kodi.log' }).then(function (r) {
+        K.logUrl = '/' + r.details.path; return fetch(K.logUrl, { cache: 'no-store' });
+      });
+    }).then(function (r) {
+      if (r.status === 401 && K.be && K.be.ok) {
+        return K.be.retry().then(function (ok) {
+          if (!ok) throw new Error('HTTP 401');
+          K.logUrl = K.be.base + '/api/fs/download?path=' + encodeURIComponent('special://logpath/kodi.log') + '&token=' + encodeURIComponent(K.be.token);
+          return fetchLog();
+        });
+      }
+      return r;
     }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }).then(function (txt) { logText = txt.length > 600000 ? txt.slice(-600000) : txt; drawLog(); });
   };
 })();
