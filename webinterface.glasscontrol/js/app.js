@@ -53,6 +53,7 @@
       var on = x[0] === cur || (x[0] === '/movies' && ['/tv', '/music', '/mv'].indexOf(cur) >= 0);
       return html`<a class="${on ? 'on' : ''}" href="#${x[0]}">${ic(x[1], 22)}<span>${t(x[2])}</span></a>`; })}`, 'tab|' + cur);
   }
+  K.NAV = NAV;
   K.drawNav = drawNav;
   K.acts.drawer = function () { document.body.classList.toggle('drawer'); };
   K.acts.lang = function (el) { K.setLang(el.dataset.v); };

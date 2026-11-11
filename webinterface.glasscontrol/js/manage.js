@@ -88,7 +88,7 @@
       if (!ctx.alive()) return; var list = [].concat.apply([], rs.map(function (g) { return g.settings || []; }));
       list.forEach(function (s) { K.sets[s.id] = s; });
       var net = netinfo ? html`<div class="glass panel" id="netinfo" style="margin-bottom:14px">${K.ui.loading()}</div>` : '';
-      K.mount(ctx.view, html`${K.ui.head(title, { sub: sub })}<div class="tabs">${[['', 'Kodi']].map(function () { return html`<a href="#/settings">Kodi</a>`; })}${extraTabs(key)}</div>${net}
+      K.mount(ctx.view, html`${K.ui.head(title, { sub: sub })}<div class="tabs">${extraTabs(key)}</div>${net}
         <div class="glass panel setbody">${list.length ? list.map(settingRow) : K.ui.empty('sliders', t('Нет настроек на этом уровне'))}</div>${saveBar()}`);
       updSave();
       if (netinfo) K.rpc('XBMC.GetInfoLabels', { labels: ['Network.IPAddress', 'Network.MacAddress', 'Network.LinkState', 'Network.SubnetMask', 'Network.GatewayAddress', 'Network.DNS1Address', 'System.FriendlyName'] }).then(function (L) {
@@ -100,11 +100,11 @@
   /* оформление этого интерфейса */
   function lookPage(ctx) {
     var mode = K.theme.mode, acc = K.theme.accent;
-    K.mount(ctx.view, html`${K.ui.head(t('Настройки'), { sub: t('Оформление интерфейса') })}<div class="tabs"><a href="#/settings">Kodi</a>${extraTabs('look')}</div>
+    K.mount(ctx.view, html`${K.ui.head(t('Настройки'), { sub: t('Оформление интерфейса') })}<div class="tabs">${extraTabs('look')}</div>
       <div class="glass panel"><h3 class="ph3">${t('Тема')}</h3>${K.ui.seg([['dark', t('Тёмная')], ['light', t('Светлая')], ['auto', t('Авто')]], mode, 'themeset')}
         <h3 class="ph3" style="margin-top:22px">${t('Акцентный цвет')}</h3><div class="swatches">${K.ACCENTS.map(function (a) { return html`<button class="swatch ${a.id === acc ? 'on' : ''}" data-act="accset" data-v="${a.id}" style="--c:rgb(${a.ac.join(',')})" aria-label="${a.id}" title="${a.id}"><i></i></button>`; })}</div>
         <div class="glass panel" style="margin-top:14px"><h3 class="ph3">${t('Видимость пунктов меню')}</h3>
-        <div class="chips tight">${NAV.filter(function (x) { return x && x !== 0; }).map(function (x) {
+        <div class="chips tight">${(K.NAV || []).filter(function (x) { return x && x !== 0; }).map(function (x) {
           var hidden = (K.store.get('hiddenNav', []) || []).indexOf(x[0]) >= 0;
           return html`<button class="chip ${hidden ? '' : 'on'}" data-act="navtoggle" data-v="${x[0]}">${ic(x[1], 16)} ${t(x[2])}</button>`;
         })}</div>
@@ -202,7 +202,7 @@
   function skinPage(ctx) {
     return K.rpc('Settings.GetSkinSettings').then(function (r) {
       if (!ctx.alive()) return; var l = (r.settings || []).sort(function (a, b) { return a.id.localeCompare(b.id); }); K.skin = {}; l.forEach(function (s) { K.skin[s.id] = s; });
-      K.mount(ctx.view, html`${K.ui.head(t('Настройки'), { sub: t('Скин') + ': ' + r.skin })}<div class="tabs"><a href="#/settings">${t('Система')}</a><a class="on" href="#/settings/skin">${t('Скин')}</a></div>
+      K.mount(ctx.view, html`${K.ui.head(t('Настройки'), { sub: t('Скин') + ': ' + r.skin })}<div class="tabs">${extraTabs('skin')}</div>
         <div class="glass panel">${l.length ? l.map(function (s) {
           return html`<div class="setrow"><div class="setrow-t"><b>${s.id}</b></div><div class="setrow-c">${s.type === 'boolean' ? K.ui.sw(s.value, 'data-act="skintog" data-id="' + s.id + '"') : html`<input class="inp" type="text" value="${s.value}" data-change="skinv" data-id="${s.id}">`}</div></div>`; }) : K.ui.empty('sliders', t('У скина нет настроек'))}</div>`);
     });
