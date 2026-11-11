@@ -9,7 +9,7 @@
   var SHOW_P = ['title', 'year', 'art', 'playcount', 'episode', 'watchedepisodes', 'rating', 'genre', 'dateadded'];
   var SHOW_D = SHOW_P.concat(['plot', 'mpaa', 'studio', 'cast', 'premiered', 'originaltitle', 'file', 'season']);
   var EP_P = ['title', 'showtitle', 'season', 'episode', 'art', 'playcount', 'resume', 'runtime', 'firstaired', 'tvshowid', 'rating', 'plot', 'dateadded'];
-  var ALBUM_P = ['title', 'artist', 'year', 'art', 'genre', 'rating', 'albumlabel', 'playcount', 'dateadded'];
+  var ALBUM_P = ['title', 'artist', 'year', 'art', 'genre', 'rating', 'albumlabel', 'playcount', 'dateadded', 'songcount'];
   var MV_P = ['title', 'artist', 'year', 'art', 'runtime', 'playcount', 'genre', 'album', 'dateadded'];
 
   function run(m, p) { return K.rpc(m, p); }
@@ -29,10 +29,16 @@
     return K.ui.card({ key: K.reg('episode', e), shape: 'land', icon: 'tv', img: K.pick(e, 'thumb', 'tvshow.fanart') || '', title: e.title, sub: e.showtitle + ' · S' + e.season + 'E' + e.episode, href: '#/tv/' + e.tvshowid + '/' + e.season, watched: e.playcount > 0, prog: pct(e) });
   }
   function albumCard(a) {
-    return K.ui.card({ key: K.reg('album', a), shape: 'sq', icon: 'disc', img: K.pick(a, 'thumb'), title: a.title, sub: [K.join(a.artist), a.year || ''].filter(Boolean).join(' · '), href: '#/music/album/' + a.albumid });
+    var sub = [K.join(a.artist), a.year || ''].filter(Boolean).join(' · ');
+    if (a.songcount != null) sub = (sub ? sub + ' · ' : '') + a.songcount + ' ' + t('треков');
+    return K.ui.card({ key: K.reg('album', a), shape: 'sq', icon: 'disc', img: K.pick(a, 'thumb'), title: a.title, sub: sub, href: '#/music/album/' + a.albumid });
   }
   function artistCard(a) {
     return K.ui.card({ key: K.reg('artist', a), shape: 'sq circle', icon: 'mic', img: K.pick(a, 'thumb'), title: a.artist, href: '#/music/artist/' + a.artistid });
+  }
+  function artistRow(a) {
+    var cnt = a.songcount != null ? a.songcount : (a.songs != null ? a.songs : '');
+    return K.ui.row({ img: K.pick(a, 'thumb'), shape: 'circle', icon: 'mic', title: a.artist, sub: cnt !== '' ? (cnt + ' ' + t('треков')) : (a.genre || []).join(', '), href: '#/music/artist/' + a.artistid });
   }
   function mvCard(m) {
     return K.ui.card({ key: K.reg('musicvideo', m), shape: 'land', icon: 'clip', img: K.pick(m, 'thumb', 'poster'), title: m.title, sub: K.join(m.artist), watched: m.playcount > 0 });
@@ -197,7 +203,7 @@
     if (a === 'album' && ctx.args[1]) return albumDetail(ctx, +ctx.args[1]);
     if (a === 'artist' && ctx.args[1]) return artistDetail(ctx, +ctx.args[1]);
     var G = [A + 'GetGenres', {}];
-    if (a === 'artists') return listPage({ title: function () { return t('Музыка'); }, sec: 'music', tabs: function () { return musicTabs('artists'); }, icon: 'mic', method: A + 'GetArtists', key: 'artists', props: ['thumbnail', 'art', 'genre'], sort: 'artist', sorts: [['artist', 'По имени'], ['dateadded', 'Недавно добавленные'], ['random', 'Случайно']], sfield: 'artist', genres: G, card: artistCard, cls: 'grid sq' })(ctx);
+    if (a === 'artists') return listPage({ title: function () { return t('Музыка'); }, sec: 'music', tabs: function () { return musicTabs('artists'); }, icon: 'mic', method: A + 'GetArtists', key: 'artists', props: ['thumbnail', 'art', 'genre', 'songcount'], sort: 'artist', sorts: [['artist', 'По имени'], ['dateadded', 'Недавно добавленные'], ['random', 'Случайно']], sfield: 'artist', genres: G, card: artistRow, cls: 'list glass panel' })(ctx);
     if (a === 'songs') return listPage({ title: function () { return t('Музыка'); }, sec: 'music', tabs: function () { return musicTabs('songs'); }, icon: 'music', method: A + 'GetSongs', key: 'songs', props: ['title', 'artist', 'album', 'albumid', 'duration', 'track', 'thumbnail', 'art', 'file', 'year', 'genre'], sort: 'title', orders: ADESC, sorts: [['title', 'По названию'], ['artist', 'По исполнителю'], ['album', 'По альбому'], ['dateadded', 'Недавно добавленные'], ['random', 'Случайно']], genres: G, cls: 'list glass panel', size: 80, card: songRowK,
       groups: [{ id: 'artist', label: 'По исполнителю', method: 'artist', key: function (m) { return K.join(m.artist); } }, { id: 'album', label: 'По альбому', method: 'album', key: function (m) { return m.album || ''; } }] })(ctx);
     return listPage({ title: function () { return t('Музыка'); }, sec: 'music', tabs: function () { return musicTabs('albums'); }, icon: 'disc', method: A + 'GetAlbums', key: 'albums', props: ALBUM_P, sort: 'title', orders: ADESC, sorts: MSORT, genres: G, card: albumCard, cls: 'grid sq', sfield: 'album', defaultGroup: 'artist',

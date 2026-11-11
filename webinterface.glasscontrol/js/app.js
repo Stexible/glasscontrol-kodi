@@ -263,6 +263,14 @@
     }).catch(function () { K.st.nopvr = true; });
     if (K.be) K.be.init().then(function () { K.runPendingScan(); });
     K.route(); K.player.start(); poll();
+    (function () {
+      var btn = document.getElementById('totop');
+      if (!btn) return;
+      window.addEventListener('scroll', function () {
+        btn.style.display = (window.scrollY > 400) ? 'grid' : 'none';
+      }, { passive: true });
+      btn.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    })();
   };
 })();
 
