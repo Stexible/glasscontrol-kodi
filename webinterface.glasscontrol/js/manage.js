@@ -292,7 +292,7 @@
             ${P.canreboot ? html`<button class="btn" data-act="power" data-v="Reboot">${ic('refresh', 16)} ${t('Перезагрузка')}</button>` : ''}${P.canshutdown ? html`<button class="btn danger" data-act="power" data-v="Shutdown">${ic('power', 16)} ${t('Выключить')}</button>` : ''}
             <button class="btn danger" data-act="power" data-v="Quit">${ic('x', 16)} ${t('Закрыть Kodi')}</button></div>
             ${pf.length > 1 ? html`<h3 class="ph3" style="margin-top:22px">${t('Профили')}</h3><div class="chips">${pf.map(function (p) { return html`<button class="chip" data-act="profile" data-v="${p.label}">${ic('user', 16)} ${p.label}</button>`; })}</div>` : ''}</div>
-          <div class="glass panel wide"><div class="sec-h" style="margin-top:0"><h3 class="ph3" style="margin:0">${t('Журнал Kodi')}</h3><div class="sec-r"><button class="btn sm" data-act="logload">${ic('refresh', 16)} ${t('Загрузить')}</button></div></div><div id="logwrap"><p class="note">${t('Нажмите «Загрузить», чтобы прочитать kodi.log')}</p></div></div>
+          <div class="glass panel wide"><div class="sec-h" style="margin-top:0"><h3 class="ph3" style="margin:0">${t('Журнал Kodi')}</h3><div class="sec-r"><button class="btn sm" data-act="texturesreset" title="${t('Удалить повреждённую базу кэша обложек Textures13.db (требуется перезапуск Kodi)')}">${ic('trash', 16)} ${t('Сбросить кэш обложек')}</button><button class="btn sm" data-act="logload">${ic('refresh', 16)} ${t('Загрузить')}</button></div></div><div id="logwrap"><p class="note">${t('Нажмите «Загрузить», чтобы прочитать kodi.log')}</p></div></div>
         </div>`);
     });
   } };
@@ -345,6 +345,18 @@
     var url = K.logUrl;
     return fetch(url, { headers: { 'X-Token': (K.be && K.be.token) ? K.be.token : '' }, cache: 'no-store' });
   }
+  K.acts.texturesreset = function () {
+    return K.be.init().then(function (ok) {
+      if (!ok) return K.toast(t('Нужен Glass Control Backend'), 'err');
+      return K.ui.confirm(t('Удалить Textures13.db? Kodi пересоздаст кэш обложек после перезапуска. Продолжить?'), { danger: true }).then(function (y) {
+        if (!y) return;
+        return K.be.call('/api/textures/reset', {}).then(function (r) {
+          K.toast((r.deleted && r.deleted.length) ? t('Удалено: {n}', { n: r.deleted.length }) : t('Файл не найден'), 'ok');
+          return K.ui.confirm(t('Перезапустите Kodi, чтобы база пересоздалась. Закрыть Kodi сейчас?'), { ok: t('Закрыть Kodi'), cancel: t('Позже') }).then(function (yy) { if (yy) return K.rpc('Application.Quit'); });
+        });
+      });
+    }).catch(K.err);
+  };
   K.acts.logload = function () {
     var useBe = K.be && K.be.ok;
     var p = useBe ? Promise.resolve(true) : (K.be ? K.be.init() : Promise.resolve(false));

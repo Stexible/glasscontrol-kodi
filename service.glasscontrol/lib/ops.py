@@ -656,3 +656,29 @@ def video_restore_content(db_dir):
     if not restored:
         raise OpError('backups contain no source content settings')
     return {'ok': True, 'restored': restored}
+
+
+def textures_reset():
+    \"\"\"Удаляет повреждённую базу кэша текстур Kodi (Textures13.db) и её служебные файлы.\"\"\"
+    try:
+        import xbmcvfs
+    except Exception:
+        xbmcvfs = None
+    base = (xbmcvfs.translatePath('special://userdata/Database/Textures13.db')
+            if xbmcvfs else 'special://userdata/Database/Textures13.db')
+    deleted = []
+    for suf in ('', '-wal', '-shm', '-journal'):
+        p = base + suf
+        try:
+            exists = (xbmcvfs.exists(p) if xbmcvfs else os.path.exists(p))
+            if exists:
+                if xbmcvfs:
+                    ok = bool(xbmcvfs.delete(p))
+                else:
+                    os.remove(p)
+                    ok = True
+                if ok:
+                    deleted.append(p)
+        except Exception:
+            pass
+    return {'deleted': deleted}

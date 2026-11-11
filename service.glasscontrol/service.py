@@ -218,6 +218,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, res)
             if path == '/api/lib/reset':
                 return self._send(200, ops.lib_reset(db_dir(), d.get('kind', '')))
+            if path == '/api/textures/reset':
+                xbmc.log('[glasscontrol] textures.reset start', xbmc.LOGINFO)
+                res = ops.textures_reset()
+                xbmc.log('[glasscontrol] textures.reset done: %s' % (res,), xbmc.LOGINFO)
+                return self._send(200, res)
             if path == '/api/debug':
                 res = ops.debug_info(db_dir())
                 # attach sources.xml and passwords.xml
