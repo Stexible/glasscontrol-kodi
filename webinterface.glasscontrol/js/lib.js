@@ -370,7 +370,7 @@
         ${cont.length ? html`${K.ui.sec(t('Продолжить просмотр'))}<div class="hrow">${cont}</div>` : ''}
         ${hrow(t('Новые фильмы'), g(2, 'movies'), movieCard, '#/movies?m=dateadded')}
         ${hrow(t('Новые серии'), g(3, 'episodes'), epCard, '#/tv')}
-        ${hrow(t('Новые альбомы'), g(4, 'albums'), albumCard, '#/music?m=dateadded')}
+        ${g(4, 'albums').length ? html`${K.ui.sec(t('Новые альбомы'), '', '#/music?m=dateadded')}<div class="grid sq">${g(4, 'albums').map(albumCard)}</div>` : ''}
         ${!tot(5) && !tot(6) && !tot(7) ? K.ui.empty('box', t('Медиатека пуста'), t('Добавьте источники в Kodi и запустите сканирование')) : ''}`, sig);
     }); }
     ctx.refresh = load; return load();
