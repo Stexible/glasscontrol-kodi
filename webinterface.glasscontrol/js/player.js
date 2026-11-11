@@ -182,7 +182,7 @@
           <button class="ctl-btn" data-act="lnext">${ic('next', 20)}</button>
           ${it.kind === 'video' ? html`<button class="ctl-btn" data-act="ltheater" aria-label="${t('Кинотеатр')}">${ic('wide', 20)}</button><button class="ctl-btn" data-act="laud" aria-label="${t('Озвучка')}">${ic('audio', 20)}</button><button class="ctl-btn" data-act="lfullscreen" aria-label="${t('На весь экран')}">${ic('fullscreen', 20)}</button>` : ''}
           <button class="ctl-btn" data-act="lstop">${ic('x', 20)}</button></div>
-        <div class="mini-bar"><input type="range" min="0" max="1000" value="0" data-seekbar data-input="lseek" aria-label="${t('Перемотка')}"></div>`, 'lbrowser|' + it.file + '|' + playing + '|' + (v && v.muted) + '|' + (v ? Math.round(v.volume*100) : 100));
+        <div class="mini-bar"><input type="range" min="0" max="1000" value="0" data-seekbar data-input="lseek" aria-label="${t('Перемотка')}"></div>`, 'lbrowser|' + it.file + '|' + playing);
       return;
     }
     var playing = P.props && P.props.speed !== 0, thumb = P.thumb();

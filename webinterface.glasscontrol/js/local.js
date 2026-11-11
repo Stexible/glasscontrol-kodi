@@ -37,6 +37,7 @@
     v.addEventListener('play', function () { K.emit('local'); });
     v.addEventListener('pause', function () { K.emit('local'); });
     v.addEventListener('loadedmetadata', function () { K.emit('local'); });
+    v.addEventListener('volumechange', function () { lvolUI(); });
     v.addEventListener('error', function () { K.toast(t('Браузер не может воспроизвести этот формат'), 'err'); });
     return v;
   }
@@ -96,8 +97,24 @@
   }
   function upd() { K.emit('local'); }
   K.acts.lprev = L.prev; K.acts.lnext = function () { L.next(); }; K.acts.lstop = L.stop; K.acts.lpp = L.toggle;
-  K.acts.lmute = function () { var v = L.el; if (v) { v.muted = !v.muted; K.emit('local'); } };
-  K.acts.lvolset = function (e) { var v = L.el; if (!v) return; v.volume = e.value / 100; v.muted = false; e.style.setProperty('--p', e.value + '%'); if (e.type === 'change') { L.drag = false; K.emit('local'); } else { L.drag = true; } };
+  function lvolUI() {
+    var v = L.el; if (!v) return;
+    var val = Math.round((v.muted ? 0 : v.volume) * 100);
+    K.$$('input[data-input=\"lvolset\"]').forEach(function (n) {
+      n.value = val;
+      n.style.setProperty('--p', val + '%');
+    });
+    K.$$('[data-volnum]').forEach(function (n) { n.textContent = val; });
+    K.$$('[data-act=\"lmute\"]').forEach(function (n) {
+      var small = !!n.closest('#mini');
+      n.innerHTML = ic(v.muted ? 'mute' : 'volume', small ? 20 : 24).s;
+      n.classList.toggle('on', !!v.muted);
+    });
+  }
+  K.lvolUI = lvolUI;
+  K.on('lvol', lvolUI);
+  K.acts.lmute = function () { var v = L.el; if (v) { v.muted = !v.muted; lvolUI(); K.emit('lvol'); } };
+  K.acts.lvolset = function (e) { var v = L.el; if (!v) return; v.volume = e.value / 100; v.muted = false; lvolUI(); K.emit('lvol'); };
   K.acts.ltheater = function () { L.theater = !L.theater; var v = L.el; if (v) v.classList.toggle('theater', L.theater); var slot = document.getElementById('now-vslot'); if (slot) slot.classList.toggle('theater', L.theater); K.emit('local'); };
   K.acts.lfullscreen = function () { var v = L.el; if (!v) return; if (document.fullscreenElement || document.webkitFullscreenElement) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } else { (v.requestFullscreen || v.webkitRequestFullscreen || v.msRequestFullscreen).call(v); } };
   K.acts.lqgoto = function (el) { L.i = +el.dataset.i; saveQ(); return L.load(); };
