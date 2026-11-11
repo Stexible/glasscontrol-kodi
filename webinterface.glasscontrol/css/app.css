@@ -443,6 +443,8 @@ body.lplay #lbar { display: flex; } body.lplay.playing #lbar { bottom: 100px; }
 .alb-cov { width: 64px; height: 64px; border-radius: 14px; overflow: hidden; flex: none; background: rgba(var(--fg), .08); display: grid; place-items: center; }
 .alb-cov img { width: 100%; height: 100%; object-fit: cover; } .alb-t { min-width: 0; flex: 1; } .alb-t b { display: block; font-weight: 600; } .alb-t small { color: var(--ink2); }
 .now-a .sep { color: var(--ink2); }
+.lnk { cursor: pointer; transition: text-shadow .15s, color .15s, opacity .15s; }
+.lnk:hover { color: var(--accent, #fff); text-shadow: 0 0 12px rgba(255,255,255,.45); opacity: 1; }
 .setrow-c .chips.tight { justify-content: flex-end; }
 
 .swatch { background: var(--c); } .swatch i { display: none; } .swatch.on i { display: block; position: absolute; inset: 0; margin: auto; width: 14px; height: 14px; border-radius: 50%; background: rgba(255, 255, 255, .9); box-shadow: 0 0 0 2px rgba(0, 0, 0, .25); }
