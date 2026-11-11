@@ -3,6 +3,9 @@
   'use strict';
   var K = window.K, t = K.t, html = K.html, ic = K.ic, $ = K.$;
   var L = K.local = { q: [], i: -1, el: null, theater: false };
+  function saveQ() { try { localStorage.setItem('gc.lq', JSON.stringify({ q: L.q, i: L.i })); } catch (e) { /* ignore */ } }
+  function loadQ() { try { var s = JSON.parse(localStorage.getItem('gc.lq') || 'null'); if (s && Array.isArray(s.q)) { L.q = s.q; L.i = (typeof s.i === 'number') ? s.i : -1; } } catch (e) { /* ignore */ } }
+  loadQ();
   var V = 'VideoLibrary.', A = 'AudioLibrary.';
   K.target = function () { return K.store.get('target', 'kodi'); };
 
@@ -64,9 +67,9 @@
     o = o || {};
     return Promise.all(specs.map(L.resolve)).then(function (arr) {
       var items = [].concat.apply([], arr); if (!items.length) throw new Error(t('Нечего воспроизводить'));
-      if (o.append) { L.q = L.q.concat(items); if (L.i < 0) { L.i = 0; return L.load(); } K.toast(t('Добавлено в очередь'), 'ok'); upd(); return; }
+      if (o.append) { L.q = L.q.concat(items); if (L.i < 0) { L.i = 0; saveQ(); return L.load(); } K.toast(t('Добавлено в очередь'), 'ok'); upd(); saveQ(); return; }
       if (o.next && L.i >= 0) { L.q.splice(L.i + 1, 0); Array.prototype.splice.apply(L.q, [L.i + 1, 0].concat(items)); K.toast(t('Будет следующим'), 'ok'); return; }
-      L.q = items; L.i = Math.min(start || 0, items.length - 1); return L.load();
+      L.q = items; L.i = Math.min(start || 0, items.length - 1); saveQ(); return L.load();
     }).catch(K.err);
   };
   L.load = function () {
@@ -79,9 +82,9 @@
       document.body.classList.add('playing'); document.body.classList.toggle('video', it.kind === 'video');
     }).catch(K.err);
   };
-  L.next = function (auto) { if (L.i + 1 < L.q.length) { L.i++; return L.load(); } if (auto) L.stop(); };
-  L.prev = function () { var v = el(); if (v.currentTime > 4 || L.i === 0) { v.currentTime = 0; return; } L.i--; return L.load(); };
-  L.stop = function () { var v = el(); v.pause(); v.removeAttribute('src'); v.load(); L.q = []; L.i = -1; document.body.classList.remove('lplay', 'lvid', 'playing', 'video'); K.emit('local'); };
+  L.next = function (auto) { if (L.i + 1 < L.q.length) { L.i++; saveQ(); return L.load(); } if (auto) L.stop(); };
+  L.prev = function () { var v = el(); if (v.currentTime > 4 || L.i === 0) { v.currentTime = 0; return; } L.i--; saveQ(); return L.load(); };
+  L.stop = function () { var v = el(); v.pause(); v.removeAttribute('src'); v.load(); L.q = []; L.i = -1; document.body.classList.remove('lplay', 'lvid', 'playing', 'video'); saveQ(); K.emit('local'); };
   L.toggle = function () { var v = el(); if (v.paused) v.play(); else v.pause(); };
   function media(it) {
     if (!('mediaSession' in navigator)) return;
@@ -97,7 +100,7 @@
   K.acts.lvolset = function (e) { var v = L.el; if (v) { v.volume = e.value / 100; v.muted = false; e.style.setProperty('--p', e.value + '%'); K.emit('local'); } };
   K.acts.ltheater = function () { L.theater = !L.theater; var v = L.el; if (v) v.classList.toggle('theater', L.theater); var slot = document.getElementById('now-vslot'); if (slot) slot.classList.toggle('theater', L.theater); K.emit('local'); };
   K.acts.lfullscreen = function () { var v = L.el; if (!v) return; if (document.fullscreenElement || document.webkitFullscreenElement) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } else { (v.requestFullscreen || v.webkitRequestFullscreen || v.msRequestFullscreen).call(v); } };
-  K.acts.lqgoto = function (el) { L.i = +el.dataset.i; return L.load(); };
+  K.acts.lqgoto = function (el) { L.i = +el.dataset.i; saveQ(); return L.load(); };
   K.acts.lqclear = function () { L.stop(); K.route(true); };
   K.acts.laud = function () { var v = L.el; if (!v) return; if (v.audioTracks && v.audioTracks.length > 1) { var cur = (typeof v.audioTracks.selectedIndex === 'number') ? v.audioTracks.selectedIndex : 0; var next = (cur + 1) % v.audioTracks.length; for (var i = 0; i < v.audioTracks.length; i++) v.audioTracks[i].enabled = (i === next); K.toast(t('Аудиодорожка') + ' ' + (next + 1) + '/' + v.audioTracks.length, 'ok'); } else { K.toast(t('Выбор озвучки недоступен в браузере'), 'err'); } };
   K.acts.lseek = function (e) { var v = el(); L.drag = true; clearTimeout(L._d); L._d = setTimeout(function () { L.drag = false; }, 400); if (v.duration) v.currentTime = e.value / 1000 * v.duration; };
