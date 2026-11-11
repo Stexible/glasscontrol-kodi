@@ -6,6 +6,7 @@ import os
 import secrets
 import sys
 import threading
+import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -58,11 +59,13 @@ class Handler(BaseHTTPRequestHandler):
     def _download(self, fpath):
         if not fpath:
             return self._send(400, {'error': 'empty path'})
+        xbmc.log('[glasscontrol] fs.download start: %s' % (fpath,), xbmc.LOGINFO)
         try:
             import xbmcvfs
             vf = xbmcvfs.File(fpath)
             size = vf.size()
         except Exception as e:
+            xbmc.log('[glasscontrol] fs.download err: %r' % (e,), xbmc.LOGERROR)
             return self._send(400, {'error': str(e)})
         if size < 0:
             size = 0
@@ -165,17 +168,20 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split('?')[0]
         if path == '/api/ping':          # ping без токена: только признак жизни
             return self._send(200, {'ok': 1, 'version': VERSION, 'auth': self._auth()})
-        if path == '/api/fs/download':
-            return self._download(d.get('path', ''))
         if not self._auth():
             return self._send(401, {'error': 'unauthorized'})
         try:
+            if path == '/api/fs/download':
+                return self._download(d.get('path', ''))
             if path == '/api/caps':
                 android = xbmc.getCondVisibility('System.Platform.Android')
                 return self._send(200, {'version': VERSION, 'android': bool(android), 'brightness': ops.brightness_get().get('supported', False),
                                         'platform': 'android' if android else sys.platform})
             if path == '/api/fs/list':
-                return self._send(200, ops.list_dir(d.get('path', '')))
+                xbmc.log('[glasscontrol] fs.list start: %s' % (d.get('path', ''),), xbmc.LOGINFO)
+                res = ops.list_dir(d.get('path', ''))
+                xbmc.log('[glasscontrol] fs.list done: %s (%d items)' % (d.get('path', ''), len(res.get('items', []))), xbmc.LOGINFO)
+                return self._send(200, res)
             if path == '/api/fs/copy':
                 return self._send(200, ops.copy(d['src'], d['dst'], bool(d.get('overwrite'))))
             if path == '/api/fs/move':
@@ -250,14 +256,21 @@ def main():
     port = int(ADDON.getSetting('port') or 8089)
     win = xbmcgui.Window(10000)
     srv = None
-    try:
-        srv = ThreadingHTTPServer(('0.0.0.0', port), Handler)
+    for attempt in range(5):
+        try:
+            srv = ThreadingHTTPServer(('0.0.0.0', port), Handler)
+            break
+        except OSError as e:
+            xbmc.log('[glasscontrol] bind attempt %d failed: %r' % (attempt + 1, e), xbmc.LOGWARNING)
+            time.sleep(1)
+    else:
+        xbmc.log('[glasscontrol] cannot bind port %d' % port, xbmc.LOGERROR)
+        srv = None
+    if srv:
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         win.setProperty('glasscontrol.token', TOKEN)
         win.setProperty('glasscontrol.port', str(port))
         xbmc.log('[glasscontrol] backend on :%d' % port, xbmc.LOGINFO)
-    except OSError as e:
-        xbmc.log('[glasscontrol] cannot start: %r' % (e,), xbmc.LOGERROR)
     while not monitor.waitForAbort(2):
         pass
     if srv:

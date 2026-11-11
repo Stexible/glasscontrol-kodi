@@ -294,9 +294,7 @@
       if (!K.be.ok) return K.toast(t('Нужен Glass Control Backend'), 'err');
       return K.be.call('/api/lib/restore', {}).then(function (r) {
         K.toast(t('Восстановлено источников') + ': ' + r.restored, 'ok');
-        return K.ui.confirm(t('Перезагрузите профиль, затем нажмите «Обновить видео».'), { ok: t('Перезагрузить профиль'), cancel: t('Позже') }).then(function (y) {
-          if (y) return K.rpc('Profiles.GetCurrentProfile', {}).then(function (p) { return K.rpc('Profiles.LoadProfile', { profile: p.label, prompt: false }); });
-        });
+        return K.ui.confirm(t('Источники восстановлены. Перезапустите Kodi, чтобы они появились в библиотеке.'), { ok: t('Понятно'), cancel: t('Позже') });
       });
     }).catch(K.err);
   };

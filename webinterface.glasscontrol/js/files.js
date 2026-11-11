@@ -196,11 +196,10 @@
       K.toast(t('Источник добавлен'), 'ok');
       if (r.auth === false) K.toast(t('Не удалось сохранить логин и пароль в passwords.xml'), 'err');
       var kind = media === 'video' ? 'video' : media === 'music' ? 'music' : '';
-      if (!kind || (kind === 'video' && content === 'none')) { restartNote(); return; }
       var dir = r.path || p;
-      // новые логины/пароли Kodi подхватит только после перезагрузки профиля — тогда же и сканируем
-      if (r.auth) { restartNote(kind, dir); return; }
-      return K.libUpdate(kind, { directory: dir, clean: false }).then(function () { restartNote(); });
+      if (!kind || (kind === 'video' && content === 'none')) { restartNote(); return; }
+      // сканируем сразу через VideoLibrary.Scan / MusicLibrary.Scan — без перезагрузки профиля
+      return K.libUpdate(kind, { directory: dir, clean: false }).then(function () { restartNote(kind, dir); });
     }).catch(K.err);
   };
   K.acts.srccontent = function (el) {
@@ -218,17 +217,8 @@
   };
   function restartNote(kind, path) {
     if (K.srcModal && document.body.contains(K.srcModal.el)) K.srcModal.close();
-    var msg = kind ? t('Источник добавлен. Чтобы Kodi увидел источник и пароль, перезагрузите профиль — сканирование начнётся автоматически.') : t('Источники изменены. Kodi подхватит изменения после перезапуска (или перезагрузки профиля).');
-    K.ui.confirm(msg, { ok: t('Перезагрузить профиль'), cancel: t('Позже') }).then(function (y) {
-      if (!y) return;
-      if (kind && path) {
-        try { localStorage.setItem('gc.pendingScan', JSON.stringify({ kind: kind, path: path })); } catch (e) { }
-      }
-      return K.rpc('Profiles.GetCurrentProfile', { properties: ['lockmode'] }).then(function (r) { return K.rpc('Profiles.LoadProfile', { profile: r.label, prompt: false }); }).then(function () {
-        K.toast(t('Профиль перезагружается…'), 'ok');
-        if (kind && path && K.runPendingScan) K.runPendingScan();
-      });
-    });
+    var msg = kind ? t('Источник добавлен и сканирование запущено. Kodi увидит источник и пароль после перезапуска приложения.') : t('Источники изменены. Kodi подхватит изменения после перезапуска приложения.');
+    K.ui.confirm(msg, { ok: t('Понятно'), cancel: t('Закрыть') }).then(function () { /* no profile reload — it deadlocks with SMB I/O */ });
   }
   K.acts.srcpick = function () { K.pickDir(function (p) { var i = $('#sp'); if (i) i.value = p; }); };
   K.acts.srcnet = function () {

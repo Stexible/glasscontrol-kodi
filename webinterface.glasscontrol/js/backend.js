@@ -3,6 +3,13 @@
   'use strict';
   var K = window.K;
   var B = K.be = { ok: false, caps: null, base: '', token: '', tried: false, _p: null };
+  /* AbortController с таймаутом: чтобы запросы к бэкенду не висели вечно (особенно SMB-обзор папок) */
+  B._abortSignal = function (ms) {
+    if (typeof AbortController === 'undefined') return undefined;
+    var ctrl = new AbortController();
+    setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, ms || 20000);
+    return ctrl.signal;
+  };
   B.init = function () {
     if (B._p) return B._p;
     B._p = K.rpc('XBMC.GetInfoLabels', { labels: ['Window(Home).Property(glasscontrol.token)', 'Window(Home).Property(glasscontrol.port)'] }).then(function (l) {
@@ -10,7 +17,7 @@
       B.tried = true;
       if (!tok || !port) { B.ok = false; return false; }
       B.token = tok; B.base = location.protocol + '//' + location.hostname + ':' + port;
-      return fetch(B.base + '/api/caps', { headers: { 'X-Token': tok }, cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (c) {
+      return fetch(B.base + '/api/caps', { headers: { 'X-Token': tok }, cache: 'no-store', signal: B._abortSignal(20000) }).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (c) {
         B.caps = c; B.ok = true; K.emit('be', true); return true;
       }).catch(function () { B.ok = false; B.unreachable = true; return false; });
     }).catch(function () { B.tried = true; B.ok = false; return false; });
@@ -18,7 +25,7 @@
   };
   B.retry = function () { B._p = null; return B.init(); };
   function post(path, body) {
-    return fetch(B.base + path, { method: 'POST', headers: { 'X-Token': B.token, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}), cache: 'no-store' })
+    return fetch(B.base + path, { method: 'POST', headers: { 'X-Token': B.token, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}), cache: 'no-store', signal: B._abortSignal(20000) })
       .then(function (r) { return r.json().then(function (j) { return { r: r, j: j }; }, function () { return { r: r, j: {} }; }); }, function () { throw new Error(K.t('Серверная часть недоступна (порт заблокирован?)')); });
   }
   /* токен меняется при каждом старте службы (перезапуск Kodi/профиля): при 401 берём свежий и повторяем один раз */
