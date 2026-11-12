@@ -363,7 +363,7 @@
       function g(i, k) { return K.ok(r[i]) ? (r[i][k] || []) : []; }
       function tot(i) { return K.ok(r[i]) && r[i].limits ? r[i].limits.total : 0; }
       var cont = g(0, 'movies').map(movieCard).concat(g(1, 'episodes').map(epCard));
-      var stats = [['film', t('Фильмов'), tot(5), '#/movies'], ['tv', t('Сериалов'), tot(6), '#/tv'], ['disc', t('Альбомов'), tot(7), '#/music'], ['music', t('Треков'), tot(8), '#/music/songs']];
+      var stats = [['film', t('Фильмов'), tot(5), '#/movies'], ['tv', t('Сериалов'), tot(6), '#/tv'], ['disc', t('Альбомов'), tot(7), '#/music'], ['music', t('Треков'), tot(8), '#/music/songs']].filter(function (s) { return (s[2] || 0) > 0; });
       var sig = JSON.stringify([r.map(function (x) { return K.ok(x) ? Object.keys(x).map(function (k) { return Array.isArray(x[k]) ? x[k].map(function (i) { return [i.movieid || i.episodeid || i.albumid, i.playcount, i.resume && i.resume.position]; }) : x[k]; }) : 0; }), K.lang]);
       K.mount(ctx.view, html`${K.ui.head(t('Главная'), { sub: t('Центр управления Kodi'), right: html`<button class="btn sm" data-act="quick" data-v="all" title="${t('Найти новые файлы и убрать удалённые, ничего не пересоздавая')}">${ic('refresh', 16)} ${t('Быстрое обновление')}</button>` })}
         <div class="stats">${stats.map(function (s) { return html`<a class="glass stat" href="${s[3]}">${ic(s[0], 22)}<b>${s[2]}</b><small>${s[1]}</small></a>`; })}</div>

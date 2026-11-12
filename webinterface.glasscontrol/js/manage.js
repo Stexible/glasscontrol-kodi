@@ -232,7 +232,7 @@
           <div class="pad-row">${b('inBack', 'back', '', t('Назад'))}${b('inHome', 'home', '', t('Домой'))}${b('inContextMenu', 'menu', '', t('Меню'))}${b('inInfo', 'info', '', t('Инфо'))}</div></div>
         <div class="glass panel">
           <div class="pad-row">${b('prev', 'prev', '', t('Предыдущий'))}${b('step', 'rew', 'smallbackward', t('Назад'))}<button class="pad big" data-act="pp">${ic('play', 24)}</button>${b('step', 'ff', 'smallforward', t('Вперёд'))}${b('next', 'next', '', t('Следующий'))}</div>
-          <div class="pad-row">${b('stop', 'stop', '', t('Стоп'))}${b('vol', 'volume', 'down', t('Тише'))}${b('mute', 'mute', '', t('Без звука'))}${b('vol', 'volume', 'up', t('Громче'))}${b('fullscreen', 'fullscreen', '', t('На весь экран'))}</div>
+          <div class="pad-row">${b('stop', 'stop', '', t('Стоп'))}${b('vol', 'voldown', 'down', t('Тише'))}${b('mute', 'mute', '', t('Без звука'))}${b('vol', 'volup', 'up', t('Громче'))}${b('fullscreen', 'fullscreen', '', t('На весь экран'))}</div>
           <div class="pad-row">${b('inact', 'subs', 'showsubtitles', t('Субтитры'))}${b('inact', 'audio', 'audionextlanguage', t('Аудиодорожка'))}${b('inShowOSD', 'sliders', '', 'OSD')}${b('inact', 'image', 'screenshot', t('Скриншот'))}</div>
           <div class="swipe" id="swipe">${ic('remote', 28)}<span>${t('Свайп — стрелки, касание — OK')}</span></div></div>
         <div class="glass panel" id="rscreen"></div>
@@ -254,6 +254,17 @@
     var sw = $('#swipe'), x0, y0, t0;
     function hit(e) { var b = e.target.closest('.pad'); if (!b) return; b.classList.add('hit'); var d = b.closest('.dpad'); if (d) { var c = (b.className.match(/\b([udlr])\b/) || [])[1]; if (c) d.classList.add('hit-' + c); setTimeout(function () { d.classList.remove('hit-' + c); }, 260); } setTimeout(function () { b.classList.remove('hit'); }, 260); if (navigator.vibrate) try { navigator.vibrate(12); } catch (x) { /* нет */ } }
     ctx.view.addEventListener('pointerdown', hit);
+    // автоповтор стрелок пульта при удержании
+    var _rT = null, _rI = null;
+    function _stopRepeat() { clearTimeout(_rT); clearInterval(_rI); _rT = null; _rI = null; }
+    function _startRepeat(b) {
+      var act = b.dataset.act, v = b.dataset.v;
+      var fn = K.acts[act]; if (!fn) return;
+      var call = function () { try { var r = v ? fn(b) : fn(b); if (r && r.catch) r.catch(K.err); } catch (x) { K.err(x); } if (navigator.vibrate) try { navigator.vibrate(8); } catch (e) { } };
+      _rT = setTimeout(function () { _rI = setInterval(call, 150); }, 380);
+    }
+    ctx.view.addEventListener('pointerdown', function (e) { var b = e.target.closest('.dpad .pad'); if (!b || b.classList.contains('ok')) return; _startRepeat(b); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { ctx.view.addEventListener(ev, _stopRepeat); });
     sw.addEventListener('pointerdown', function () { sw.classList.add('hit'); setTimeout(function () { sw.classList.remove('hit'); }, 240); });
     sw.addEventListener('pointerdown', function (e) { x0 = e.clientX; y0 = e.clientY; t0 = Date.now(); sw.setPointerCapture(e.pointerId); });
     sw.addEventListener('pointerup', function (e) {

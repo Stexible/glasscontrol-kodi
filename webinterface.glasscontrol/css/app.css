@@ -225,11 +225,11 @@ input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 
 
 /* ---------- пульт ---------- */
 .remote { display: grid; grid-template-columns: minmax(300px, 420px) minmax(0, 1fr); gap: 22px; align-items: start; }
-.dpad { position: relative; width: min(100%, 340px); aspect-ratio: 1; margin: 6px auto 18px; border-radius: 50%; background: radial-gradient(circle at 35% 25%, rgba(130, 160, 178, .35), rgba(20, 32, 44, .7) 70%); border: 1px solid var(--stroke-hi); box-shadow: inset 0 2px 0 rgba(var(--fg), .12), 0 16px 40px rgba(0, 0, 0, .45); overflow: hidden; touch-action: none; }
+.dpad { position: relative; width: min(100%, 280px); aspect-ratio: 1; margin: 6px auto 18px; border-radius: 50%; background: radial-gradient(circle at 35% 25%, rgba(130, 160, 178, .35), rgba(20, 32, 44, .7) 70%); border: 1px solid var(--stroke-hi); box-shadow: inset 0 2px 0 rgba(var(--fg), .12), 0 16px 40px rgba(0, 0, 0, .45); overflow: hidden; touch-action: none; }
 .dpad button { position: absolute; display: grid; place-items: center; color: var(--ink2); transition: .12s; } .dpad button:hover { color: var(--ink); background: rgba(var(--fg), .06); } .dpad button:active { background: rgba(var(--ac), .25); color: #fff; }
 .dpad .u { left: 30%; right: 30%; top: 0; height: 32%; } .dpad .d { left: 30%; right: 30%; bottom: 0; height: 32%; } .dpad .l { top: 30%; bottom: 30%; left: 0; width: 32%; } .dpad .r { top: 30%; bottom: 30%; right: 0; width: 32%; }
 .dpad .ok { left: 31%; top: 31%; width: 38%; height: 38%; border-radius: 50%; font-weight: 600; letter-spacing: .08em; background: linear-gradient(180deg, rgba(98, 214, 226, .9), rgba(43, 140, 157, .95)); color: #04232a; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 4px 18px rgba(0, 0, 0, .4); } .dpad .ok:hover { color: #04232a; filter: brightness(1.1); }
-.pad-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; } .pad-row .btn { flex-direction: column; gap: 4px; min-height: 58px; font-size: 12px; padding: 0 6px; }
+.pad-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; } .pad-row .btn { flex-direction: column; gap: 4px; min-height: 48px; font-size: 12px; padding: 0 6px; }
 .swipe { height: 150px; display: grid; place-items: center; color: var(--ink3); text-align: center; touch-action: none; user-select: none; font-size: 13px; }
 .quick { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
 
@@ -352,7 +352,7 @@ hr.sep { border: 0; height: 1px; background: var(--stroke); margin: 8px 6px; }
 .addon-m { flex: 1; min-width: 0; } .addon-m b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .addon-m small { color: var(--ink3); display: block; }
 .addon-m p { color: var(--ink2); font-size: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; }
 .addon-a { display: flex; align-items: center; gap: 6px; flex: none; }
-.pad { display: grid; place-items: center; min-height: 56px; border-radius: 16px; background: rgba(var(--fg), .07); border: 1px solid var(--stroke); color: var(--ink); transition: .12s; } .pad:hover { background: rgba(var(--fg), .13); } .pad:active { transform: scale(.95); }
+.pad { display: grid; place-items: center; min-height: 46px; border-radius: 16px; background: rgba(var(--fg), .07); border: 1px solid var(--stroke); color: var(--ink); transition: .12s; } .pad:hover { background: rgba(var(--fg), .13); } .pad:active { transform: scale(.95); }
 .pad.big { background: linear-gradient(180deg, var(--ac-l), var(--ac-d2)); color: #031a20; }
 .dpad .pad:not(.ok) { min-height: 0; border: 0; background: none; border-radius: 0; }
 .dpadbox { padding: 22px; } .remote > .panel { min-width: 0; } .pad-row .pad { min-width: 0; }
