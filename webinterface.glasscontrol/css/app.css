@@ -235,7 +235,7 @@ input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 
 .quick { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
 
 /* ---------- мини-плеер ---------- */
-#mini { position: fixed; z-index: 40; left: calc(var(--side) + 18px); right: 18px; bottom: 16px; display: flex; align-items: center; gap: 16px; padding: 10px 16px 14px 10px; cursor: pointer; border-radius: 26px; max-width: 1200px; margin: 0 auto; transform: translateY(120%); opacity: 0; pointer-events: none; transition: transform .32s cubic-bezier(.2,.8,.2,1), opacity .28s ease; }
+#mini { position: fixed; z-index: 40; left: calc(var(--side) + clamp(16px, 3vw, 40px)); right: clamp(16px, 3vw, 40px); bottom: 16px; display: flex; align-items: center; gap: 16px; padding: 10px 16px 14px 10px; cursor: pointer; border-radius: 26px; transform: translateY(120%); opacity: 0; pointer-events: none; transition: transform .32s cubic-bezier(.2,.8,.2,1), opacity .28s ease; }
 body.playing #mini:not(.mini-hidden) { transform: translateY(0); opacity: 1; pointer-events: auto; }
 body.nowpage #mini.mini-hidden, body.remotepage #mini { transform: translateY(120%); opacity: 0; pointer-events: none; }
 .mini-art { width: 56px; height: 56px; border-radius: 16px; overflow: hidden; flex: none; position: relative; background: rgba(var(--fg), .08); border: 1px solid var(--stroke); display: grid; place-items: center; color: var(--ink3); }
@@ -252,7 +252,7 @@ body.nowpage #mini.mini-hidden, body.remotepage #mini { transform: translateY(12
 .ctl-btn.on { color: var(--accent); }
 
 /* ---------- Сейчас играет ---------- */
-.now { display: grid; grid-template-columns: minmax(280px, 440px) minmax(0, 1fr); gap: 28px; align-items: start; }
+.now { display: grid; grid-template-columns: minmax(280px, 440px) minmax(0, 1fr); gap: 28px; align-items: center; }
 .now-art { aspect-ratio: 1; border-radius: 30px; position: relative; overflow: hidden; border: 1px solid var(--stroke-hi); box-shadow: 0 24px 60px rgba(0, 0, 0, .55); background: rgba(var(--fg), .06); display: grid; place-items: center; color: var(--ink3); }
 .now-art.land { aspect-ratio: 16 / 9; } .now-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
 .now-art::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(125deg, rgba(var(--fg), .26), rgba(var(--fg), .06) 24%, transparent 42%, transparent 72%, rgba(var(--fg), .08) 84%, transparent 92%); }
