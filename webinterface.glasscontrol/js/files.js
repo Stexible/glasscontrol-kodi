@@ -299,21 +299,16 @@
 
   /* ---------- Очередь ---------- */
   K.pages.queue = { title: function () { return t('Очередь'); }, render: function (ctx) {
-    if (K.target() === 'browser') {
-      if (K.local && K.local.q && K.local.q.length) {
+    if (K.target() === 'browser' && K.local && K.local.q && K.local.q.length) {
       var items = K.local.q, cur = K.local.i;
       K.mount(ctx.view, html`${K.ui.head(t('Очередь'), { sub: items.length + ' ' + t('элементов') + ' (' + t('браузер') + ')', right: html`<button class="btn sm danger" data-act="lqclear">${ic('trash', 16)} ${t('Очистить')}</button>` })}
         <div class="glass panel list" style="padding:8px">${items.map(function (it, i) {
           return K.ui.row({ cls: i === cur ? 'cur' : '', lead: i === cur ? ic('play', 14) : i + 1, img: it.thumb || '', icon: it.kind === 'video' ? 'film' : 'music', title: it.title || it.label,
             sub: it.sub || '', attrs: 'data-act="lqgoto" data-i="' + i + '" style="cursor:pointer"' }); })}</div>`);
       return;
-      } else {
-        K.mount(ctx.view, html`${K.ui.head(t('Очередь'), { sub: t('браузер') })}${K.ui.empty('list', t('Очередь пуста'), t('Добавляйте треки через меню «⋯»'))}`);
-        return;
-      }
     }
     var pl = ctx.q.pl != null ? +ctx.q.pl : (K.player.props && K.player.props.playlistid === 1 ? 1 : 0);
-    return K.rpc('Playlist.GetItems', { playlistid: pl, properties: ['title', 'artist', 'album', 'showtitle', 'season', 'episode', 'art', 'thumbnail', 'duration', 'runtime'] }).then(function (r) {
+    return K.rpc('Playlist.GetItems', { playlistid: pl, properties: ['title', 'artist', 'album', 'showtitle', 'season', 'episode', 'art', 'thumbnail', 'duration', 'runtime', 'songid', 'musicvideoid', 'movieid', 'episodeid'] }).then(function (r) {
       if (!ctx.alive()) return; var items = r.items || [], cur = K.player.id != null && K.player.props && K.player.props.playlistid === pl ? K.player.props.position : -1;
       K.qitems = items; K.qpl = pl;
       var totSec = items.reduce(function (a, it) { return a + (it.duration || it.runtime || 0); }, 0);
@@ -329,7 +324,18 @@
             attrs: 'data-act="qplay" data-i="' + i + '" style="cursor:pointer"' }); })}</div>` : K.ui.empty('list', t('Очередь пуста'), t('Добавляйте треки и фильмы через меню «⋯»'))}`);
     });
   } };
-  K.acts.qplay = function (el) { return K.rpc('Player.Open', { item: { playlistid: K.qpl, position: +el.dataset.i } }).then(function () { K.player.refreshSoon(400); K.toast(t('Запускаю воспроизведение'), 'ok'); }); };
+  K.acts.qplay = function (el) {
+    var pos = +el.dataset.i, it = (K.qitems || [])[pos];
+    if (K.target() === 'browser' && it) {
+      var spec = null;
+      if (it.songid) spec = { songid: it.songid };
+      else if (it.musicvideoid) spec = { musicvideoid: it.musicvideoid };
+      else if (it.movieid) spec = { movieid: it.movieid };
+      else if (it.episodeid) spec = { episodeid: it.episodeid };
+      if (spec) return K.play(spec);
+    }
+    return K.rpc('Player.Open', { item: { playlistid: K.qpl, position: pos } }).then(function () { K.player.refreshSoon(400); K.toast(t('Запускаю воспроизведение'), 'ok'); });
+  };
   K.acts.qdel = function (el) { return K.rpc('Playlist.Remove', { playlistid: K.qpl, position: +el.dataset.i }).then(function () { K.route(true); }); };
   K.acts.qmove = function (el) { var i = +el.dataset.i, j = i + +el.dataset.d; return K.rpc('Playlist.Swap', { playlistid: K.qpl, position1: i, position2: j }).then(function () { K.route(true); }); };
   K.acts.qclear = function () { return K.ui.confirm(t('Очистить очередь?'), { danger: true, ok: t('Очистить') }).then(function (y) { if (y) return K.rpc('Playlist.Clear', { playlistid: K.qpl }).then(function () { K.route(true); }); }); };
