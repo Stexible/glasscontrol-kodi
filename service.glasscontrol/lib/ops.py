@@ -658,6 +658,35 @@ def video_restore_content(db_dir):
     return {'ok': True, 'restored': restored}
 
 
+def debug_info(db_dir):
+    out = {'db_dir': db_dir}
+    try:
+        import xbmcvfs
+        logp = xbmcvfs.translatePath('special://logpath/kodi.log')
+        f = xbmcvfs.File(logp)
+        size = f.size()
+        toread = min(size, 200000)
+        if size > toread:
+            f.seek(size - toread, 0)
+        data = f.readBytes(toread)
+        f.close()
+        out['log_tail'] = (data.decode('utf-8', 'replace') if isinstance(data, (bytes, bytearray)) else str(data))
+        out['log_size'] = size
+    except Exception as e:
+        out['log_error'] = str(e)
+    try:
+        import xbmcvfs
+        sx = xbmcvfs.translatePath('special://profile/sources.xml')
+        if xbmcvfs.exists(sx):
+            f = xbmcvfs.File(sx)
+            data = f.readBytes(f.size())
+            f.close()
+            out['sources_xml'] = data.decode('utf-8', 'replace') if isinstance(data, (bytes, bytearray)) else str(data)
+    except Exception as e:
+        out['sources_error'] = str(e)
+    return out
+
+
 def textures_reset():
     '''Удаляет повреждённую базу кэша текстур Kodi (Textures13.db) и её служебные файлы.'''
     try:

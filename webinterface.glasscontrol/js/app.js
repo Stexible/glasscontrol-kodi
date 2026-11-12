@@ -180,10 +180,15 @@
   }
   /* перед обновлением чиним источники и базу: без этого Kodi не видит новые папки и не рекурсирует в подпапки */
   K.libUpdate = function (kind, o) {
-    return K.be.init().then(function () {
+    K._libInflight = K._libInflight || {};
+    if (K._libInflight[kind]) return K._libInflight[kind];
+    var p = K.be.init().then(function () {
       if (!K.be.ok) return null;
       return K.be.call('/api/lib/fix', { kind: kind }).catch(function () { return null; });
     }).then(function () { return libUpdate0(kind, o); });
+    K._libInflight[kind] = p;
+    p.finally(function () { delete K._libInflight[kind]; });
+    return p;
   };
   /* после добавления источника с новым паролем профиль перезагружается: дожидаемся Kodi и запускаем отложенное сканирование */
   var pendingBusy = false;
@@ -215,7 +220,7 @@
     return K.rpc((V ? 'VideoLibrary.' : 'AudioLibrary.') + 'Clean', p).then(function () { K.toast(t('Очистка запущена'), 'ok'); setTimeout(poll, 600); }).catch(K.err);
   };
   K.libScanOnly0 = function (kind, dir) { var p = { showdialogs: false }; if (dir) p.directory = dir; S.job = 'scan'; return K.rpc((kind === 'video' ? 'VideoLibrary.' : 'AudioLibrary.') + 'Scan', p).then(function () { K.toast(t('Сканирование запущено'), 'ok'); setTimeout(poll, 600); }).catch(K.err); };
-  K.libScanOnly = function (kind, dir) { return K.libUpdate(kind, { directory: dir }); };
+  K.libScanOnly = function (kind, dir) { return K.libUpdate(kind, { directory: dir, clean: false }); };
   K.acts.quick = function (el) { var k = el.dataset.v; return k === 'all' ? Promise.all([K.libUpdate('video'), K.libUpdate('music')]) : K.libUpdate(k, { content: el.dataset.c }); };
   /* «Очистить» = полный сброс базы медиатеки (видео или музыки) с нуля; «Обновить» уже сам добавляет новое и убирает удалённое */
   K.libWipe = function (kind) {
@@ -261,7 +266,7 @@
     K.rpc('XBMC.GetInfoBooleans', { booleans: ['Pvr.HasTVChannels', 'Pvr.HasRadioChannels'] }).then(function (b) {
       K.st.nopvr = !(b['Pvr.HasTVChannels'] || b['Pvr.HasRadioChannels']); drawNav();
     }).catch(function () { K.st.nopvr = true; });
-    if (K.be) K.be.init().then(function () { K.runPendingScan(); });
+    if (K.be) K.be.init();
     K.route(); K.player.start(); poll();
     (function () {
       var btn = document.getElementById('totop');
