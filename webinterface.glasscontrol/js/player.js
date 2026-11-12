@@ -327,7 +327,7 @@
         var playing = pr.speed !== 0, thumb = P.thumb();
         var audios = pr.audiostreams || [], subs = pr.subtitles || [];
         setBg(P.fan() || thumb);
-        var sig = [P._key, pr.speed, pr.repeat, pr.shuffled, pr.canseek, pr.live, JSON.stringify(sl), pr.currentaudiostream && pr.currentaudiostream.index, pr.subtitleenabled, pr.currentsubtitle && pr.currentsubtitle.index, (audios.length) + ':' + (subs.length), thumb].join('|');
+        var sig = [P._key, pr.speed, pr.repeat, pr.shuffled, pr.canseek, pr.live, JSON.stringify(sl), pr.currentaudiostream && pr.currentaudiostream.index, pr.subtitleenabled, pr.currentsubtitle && pr.currentsubtitle.index, (audios.length) + ':' + (subs.length), thumb, K.lang].join('|');
         K.mount(view, html`<div class="now">
           <div><div class="now-art ${vid && item.fanart && !thumb ? 'land' : ''}">${ic(vid ? 'film' : 'music', 64)}${thumb ? html`<img src="${K.img(thumb)}" alt="" onerror="this.remove()">` : ''}</div>
             ${!vid && !pic ? html`<div class="glass now-eq"><div class="eq ${eqPaused() ? 'paused' : ''}">${eqBars(64, 11)}</div></div>` : ''}</div>
@@ -372,7 +372,7 @@
         if (P.queue == null) { loadQueue().then(drawQueue).catch(function () { }); return; }
         if (!P.queue.length) { box.innerHTML = ''; return; }
         var pl = P.props.playlistid, cur = P.props.position;
-        var qsig = [P.qkey, cur, P.queue.length, P.queue.map(function (i) { return i.file; }).join('|').length].join('|');
+        var qsig = [P.qkey, cur, P.queue.length, P.queue.map(function (i) { return i.file; }).join('|').length, K.lang].join('|');
         K.mount(box, html`${K.ui.sec(t('Очередь'), html`<a class="btn sm ghost" href="#/queue">${t('Управление')}</a>`)}
           <div class="glass panel list" style="padding:8px">${P.queue.map(function (it, i) {
           return K.ui.row({ cls: i === cur ? 'cur' : '', lead: i === cur ? ic('play', 14) : i + 1, img: K.pick(it, 'thumb', 'poster') || it.thumbnail || '', shape: it.showtitle ? 'land' : '', icon: it.showtitle ? 'film' : 'music',
