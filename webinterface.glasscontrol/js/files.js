@@ -309,7 +309,7 @@
     }
     var pl = ctx.q.pl != null ? +ctx.q.pl : (K.player.props && K.player.props.playlistid === 1 ? 1 : 0);
     return K.rpc('Playlist.GetItems', { playlistid: pl, properties: ['title', 'artist', 'album', 'showtitle', 'season', 'episode', 'art', 'thumbnail', 'duration', 'runtime', 'songid', 'musicvideoid', 'movieid', 'episodeid'] }).then(function (r) {
-      if (!ctx.alive()) return; var items = r.items || [], cur = K.player.id != null && K.player.props && K.player.props.playlistid === pl ? K.player.props.position : -1;
+      if (!ctx.alive()) return; var items = r.items || [], cur = K.player.id != null && K.player.props && K.player.props.playlistid === pl ? K.player.props.position : -1; console.log('QITEMS', items.length, items[0] && Object.keys(items[0]));
       K.qitems = items; K.qpl = pl;
       var totSec = items.reduce(function (a, it) { return a + (it.duration || it.runtime || 0); }, 0);
       var totMin = Math.round(totSec / 60);
