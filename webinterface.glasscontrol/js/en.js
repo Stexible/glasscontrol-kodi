@@ -100,6 +100,7 @@ K.EN = {
 "Меню": "Menu",
 "Музыка": "Music",
 "На весь экран": "Fullscreen",
+"Меню Kodi": "Kodi Menu",
 "Нажмите «Загрузить», чтобы прочитать kodi.log": "Press “Load” to read kodi.log",
 "Назад": "Back",
 "Настройки": "Settings",

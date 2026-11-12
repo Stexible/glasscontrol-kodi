@@ -267,6 +267,14 @@
     try { $('#conn-t').textContent = (K.st && K.st.online === false) ? t('Нет связи') : t('Подключено'); } catch (e) { }
     try { $('#offline').innerHTML = K.frag(html`${ic('plug', 20)}<span>${t('Нет связи с Kodi. Пробую переподключиться…')}</span>`); } catch (e) { }
   };
+  document.addEventListener('wheel', function (e) {
+    var el = e.target && e.target.closest && e.target.closest('input[type="range"][data-input*="volset"]');
+    if (!el) return;
+    e.preventDefault();
+    var step = e.deltaY < 0 ? 5 : -5;
+    el.value = Math.max(0, Math.min(100, (+el.value || 0) + step));
+    var f = K.acts[el.dataset.input]; if (f) { try { f(el, e); } catch (x) { } }
+  }, { passive: false });
   K.on('target', function () { if (K.paintTarget) K.paintTarget(); });
 
   K.start = function () {

@@ -139,11 +139,11 @@
   var volSend = K.debounce(function (v) { K.rpc('Application.SetVolume', { volume: v }).catch(K.err); }, 120);
   function volUI() {
     var v = P.vol.volume;
-    K.$$('input[data-input="volset"]').forEach(function (n) { if (document.activeElement !== n) n.value = v; n.style.setProperty('--p', v + '%'); });
+    K.$$('input[data-input="volset"]').forEach(function (n) { var sl = Math.round(Math.sqrt((v||0)/100)*100); if (document.activeElement !== n) n.value = sl; n.style.setProperty('--p', sl + '%'); });
     K.$$('[data-volnum]').forEach(function (n) { n.textContent = v; });
     K.$$('[data-act="mute"]').forEach(function (n) { n.innerHTML = ic(P.vol.muted ? 'mute' : 'volume', n.closest('#mini') ? 20 : 24).s; n.classList.toggle('on', !!P.vol.muted); });
   }
-  A.volset = function (el) { var v = +el.value; P.vol.volume = v; volUI(); volSend(v); };
+  A.volset = function (el) { var sl = +el.value; var v = Math.round(Math.pow(sl/100, 2)*100); P.vol.volume = v; volUI(); volSend(v); };
   function $$all(s) { return K.$$(s); }
   A.seekin = function (el) { P.drag = true; var v = +el.value / 1000, tot = P.total(); el.style.setProperty('--p', (v * 100) + '%'); $$all('[data-tpos]').forEach(function (n) { n.textContent = K.fmtTime(v * tot); }); };
   A.seekgo = function (el) {
@@ -354,7 +354,7 @@
               ${vid && audios.length > 1 ? html`<div class="grp">${ic('audio', 20)}${K.ui.select(audios.map(function (a) { return [a.index, [a.name || a.language || '#' + a.index, a.codec, a.channels ? a.channels + 'ch' : ''].filter(Boolean).join(' · ')]; }), pr.currentaudiostream && pr.currentaudiostream.index, 'data-change="aud"')}</div>` : ''}
               ${vid && subs.length ? html`<div class="grp">${ic('subs', 20)}${K.ui.select([['off', t('Выкл.')]].concat(subs.map(function (s) { return [s.index, s.name || s.language || '#' + s.index]; })), pr.subtitleenabled && pr.currentsubtitle ? pr.currentsubtitle.index : 'off', 'data-change="sub"')}</div>` : ''}
               ${vid ? html`<button class="btn sm ghost" data-act="osd">${ic('sliders', 16)} OSD</button><button class="btn sm ghost" data-act="codec">${ic('info', 16)} ${t('Кодеки')}</button>` : ''}
-              <button class="btn sm ghost" data-act="fullscreen">${ic('fullscreen', 16)} ${t('На весь экран')}</button>
+              <button class="btn sm ghost" data-act="fullscreen">${ic('fullscreen', 16)} ${t('Меню Kodi')}</button>
               ${pic ? html`<button class="btn sm ghost" data-act="zoom" data-v="in">${ic('zoomin', 16)}</button><button class="btn sm ghost" data-act="zoom" data-v="out">−</button><button class="btn sm ghost" data-act="rotate" data-v="clockwise">${ic('rotate', 16)}</button>` : ''}
             </div>
             ${vid && item.plot ? html`<p class="plot" style="margin-top:20px">${item.plot}</p>` : ''}
