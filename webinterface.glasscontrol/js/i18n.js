@@ -4,17 +4,14 @@
   var K = window.K = window.K || {};
   K.EN = K.EN || {};
   var saved = null;
-  try { saved = localStorage.getItem('glass.lang'); } catch (e) { /* нет хранилища */ }
+  try { saved = localStorage.getItem('glass.lang'); } catch (e) { }
   K.lang = saved || ((navigator.language || 'ru').toLowerCase().indexOf('ru') === 0 ? 'ru' : 'en');
   K.setLang = function (l) {
-    try { localStorage.setItem('glass.lang', l); } catch (e) { /* ignore */ }
+    if (l === K.lang) return;
+    try { localStorage.setItem('glass.lang', l); } catch (e) { }
     K.lang = l;
-    try { if (K.drawNav) K.drawNav(); } catch (e) { /* ignore */ }
-    // Не перерисовываем страницу «Сейчас играет» / «Очередь»: иначе сбрасывается встроенный плеер и очередь
-    var cur = (K.cur && K.cur.seg && K.cur.seg[0]) || '';
-    if (cur !== 'now' && cur !== 'queue') {
-      try { K.route(true); alert('route-ok lang=' + K.lang); } catch (e) { console.error('route err', e); alert('route-err: ' + e); }
-    }
+    try { if (K.drawNav) K.drawNav(); } catch (e) { }
+    try { K.route(true); } catch (e) { console.error('route err', e); }
   };
   K.t = function (s, p) {
     var r = (K.lang === 'ru') ? s : (K.EN[s] || s);
