@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+<a class="skip" href="#view">Перейти к содержимому</a>
 <div id="app">
   <aside id="side"><nav class="side-in glass" id="nav" aria-label="Menu"></nav></aside>
   <div id="main">
@@ -26,7 +27,7 @@
 <div id="mini" class="glass"></div>
 <nav id="tabbar" class="glass"></nav>
 <div id="scrim" data-act="drawer"></div>
-<div id="toasts"></div>
+<div id="toasts" role="status" aria-live="polite" aria-atomic="true"></div>
 <button id="totop" class="icon-btn" aria-label="Top" style="display:none;position:fixed;right:18px;bottom:calc(120px + env(safe-area-inset-bottom));z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.4)">↑</button>
 <div id="layer"></div>
 <noscript>JavaScript required.</noscript>

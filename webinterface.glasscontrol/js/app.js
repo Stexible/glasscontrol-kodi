@@ -95,7 +95,7 @@
     if (force) dropCache(r.key);
     var hit = CACHE[r.key];
     if (hit && page) {
-      view.textContent = ''; view.appendChild(hit.frag); active = hit.ctx; active.alive = function () { return my === token; };
+      view.textContent = ''; view.appendChild(hit.frag); view.classList.remove('route-in'); void view.offsetWidth; view.classList.add('route-in'); active = hit.ctx; active.alive = function () { return my === token; };
       delete CACHE[r.key]; ORDER = ORDER.filter(function (k) { return k !== r.key; });
       document.title = (page.title ? page.title(r) + ' · ' : '') + 'Glass Control';
       if (hit.dirty && active.refresh) {
@@ -106,6 +106,7 @@
       return;
     }
     window.scrollTo(0, 0);
+    view.classList.remove('route-in'); void view.offsetWidth; view.classList.add('route-in');
     if (!page) { K.mount(view, K.ui.empty('info', t('Страница не найдена'))); return; }
     document.title = (page.title ? page.title(r) + ' · ' : '') + 'Glass Control';
     view.innerHTML = K.frag(K.ui.loading());
