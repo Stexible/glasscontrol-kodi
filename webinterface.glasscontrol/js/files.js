@@ -311,14 +311,20 @@
     return K.rpc('Playlist.GetItems', { playlistid: pl, properties: ['title', 'artist', 'album', 'showtitle', 'season', 'episode', 'art', 'thumbnail', 'duration', 'runtime'] }).then(function (r) {
       if (!ctx.alive()) return; var items = r.items || [], cur = K.player.id != null && K.player.props && K.player.props.playlistid === pl ? K.player.props.position : -1;
       K.qitems = items; K.qpl = pl;
-      K.mount(ctx.view, html`${K.ui.head(t('Очередь'), { sub: items.length + ' ' + t('элементов'), right: html`<button class="btn sm danger" data-act="qclear" ${items.length ? '' : K.raw('disabled')}>${ic('trash', 16)} ${t('Очистить')}</button>` })}
+      var totSec = items.reduce(function (a, it) { return a + (it.duration || it.runtime || 0); }, 0);
+      var totMin = Math.round(totSec / 60);
+      var counter = items.length + ' ' + t('треков') + ' · ' + totMin + ' ' + t('мин');
+      K.mount(ctx.view, html`${K.ui.head(t('Очередь'), { sub: counter, right: html`<button class="btn sm danger" data-act="qclear" ${items.length ? '' : K.raw('disabled')}>${ic('trash', 16)} ${t('Очистить')}</button>` })}
         <div class="tabs"><a class="${pl === 0 ? 'on' : ''}" href="#/queue?pl=0">${t('Музыка')}</a><a class="${pl === 1 ? 'on' : ''}" href="#/queue?pl=1">${t('Видео')}</a></div>
         ${items.length ? html`<div class="glass panel list" style="padding:8px">${items.map(function (it, i) {
           var vid = pl === 1;
-          return K.ui.row({ cls: i === cur ? 'cur' : '', lead: i === cur ? ic('play', 14) : i + 1, img: K.pick(it, 'thumb', 'poster') || it.thumbnail || '', shape: vid ? 'land' : '', icon: vid ? 'film' : 'music', title: it.title || it.label,
+          var prev = items[i-1];
+          var newGroup = !prev || (it.album || it.title) !== (prev.album || prev.title) || (K.join(it.artist) !== K.join(prev.artist));
+          var groupHead = (!vid && newGroup && it.album) ? html`<div class="grp-h" style="display:flex;align-items:center;gap:10px;padding:8px 4px"><img src="${K.img(K.pick(it,'thumb','poster')||it.thumbnail||'')}" style="width:40px;height:40px;border-radius:8px;object-fit:cover" onerror="this.remove()"><div><b>${it.album}</b><br><span style="font-size:12px;color:var(--ink2)">${K.join(it.artist)}</span></div></div>` : '';
+          return html`${groupHead}${K.ui.row({ cls: i === cur ? 'cur' : '', lead: i === cur ? ic('play', 14) : i + 1, img: (vid || newGroup) ? (K.pick(it, 'thumb', 'poster') || it.thumbnail || '') : '', shape: vid ? 'land' : '', icon: vid ? 'film' : 'music', title: it.title || it.label,
             sub: it.showtitle ? it.showtitle + ' · S' + it.season + 'E' + it.episode : K.join(it.artist) + (it.album ? ' — ' + it.album : ''),
             right: html`<button class="icon-btn hov" data-act="qmove" data-i="${i}" data-d="-1" ${i === 0 ? K.raw('disabled') : ''} aria-label="${t('Выше')}">${ic('up', 18)}</button><button class="icon-btn hov" data-act="qmove" data-i="${i}" data-d="1" ${i === items.length - 1 ? K.raw('disabled') : ''} aria-label="${t('Ниже')}">${ic('down', 18)}</button><button class="icon-btn" data-act="qdel" data-i="${i}" aria-label="${t('Убрать')}">${ic('x', 18)}</button>`,
-            attrs: 'data-act="qplay" data-i="' + i + '" style="cursor:pointer"' }); })}</div>` : K.ui.empty('list', t('Очередь пуста'), t('Добавляйте треки и фильмы через меню «⋯»'))}`);
+            attrs: 'data-act="qplay" data-i="' + i + '" style="cursor:pointer"' })}`; })}</div>` : K.ui.empty('list', t('Очередь пуста'), t('Добавляйте треки и фильмы через меню «⋯»'))}`);
     });
   } };
   K.acts.qplay = function (el) { return K.rpc('Player.Open', { item: { playlistid: K.qpl, position: +el.dataset.i } }).then(function () { K.player.refreshSoon(400); K.toast(t('Запускаю воспроизведение'), 'ok'); }); };
