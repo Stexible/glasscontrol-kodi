@@ -323,7 +323,7 @@
       } else {
         if (K.local && K.local.i >= 0) K.local.stop();
       }
-      K.store.set('target', newV);
+      K._target = newV; K.store.set('target', newV);
       if (K.paintTarget) K.paintTarget();
       K.toast(newV === 'browser' ? t('Воспроизведение: в этом браузере') : t('Воспроизведение: на Kodi'), 'ok');
       K.emit('target');

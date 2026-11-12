@@ -318,7 +318,7 @@
               K.mount(box, html`${K.ui.sec(t('Очередь'), html`<a class="btn sm ghost" href="#/queue">${t('Управление')}</a>`)}
                 <div class="glass panel list" style="padding:8px">${K.local.q.map(function (it, i) {
                   return K.ui.row({ cls: i === K.local.i ? 'cur' : '', lead: i === K.local.i ? ic('play', 14) : i + 1, img: it.thumb || '', icon: 'music', title: it.title || it.label,
-                    sub: it.sub || '', attrs: 'style="cursor:pointer" data-act="lqgoto" data-i="' + i + '"' });
+                    sub: it.sub || '', right: html`<span class="row-s">${K.fmtTime(it.duration || 0)}</span>`, attrs: 'style="cursor:pointer" data-act="lqgoto" data-i="' + i + '"' });
                 })}</div>`);
             }
           }

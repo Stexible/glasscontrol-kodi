@@ -7,7 +7,8 @@
   function loadQ() { try { var s = JSON.parse(localStorage.getItem('gc.lq') || 'null'); if (s && Array.isArray(s.q)) { L.q = s.q; L.i = (typeof s.i === 'number') ? s.i : -1; } } catch (e) { /* ignore */ } }
   loadQ();
   var V = 'VideoLibrary.', A = 'AudioLibrary.';
-  K.target = function () { return K.store.get('target', 'kodi'); };
+  K._target = K.store.get('target', 'kodi');
+  K.target = function () { return K._target || K.store.get('target', 'kodi'); };
 
   function el() {
     if (L.el) return L.el;
@@ -54,11 +55,11 @@
   }
   var KINDS = { movieid: [V + 'GetMovieDetails', 'moviedetails', 'video'], episodeid: [V + 'GetEpisodeDetails', 'episodedetails', 'video'], musicvideoid: [V + 'GetMusicVideoDetails', 'musicvideodetails', 'video'], songid: [A + 'GetSongDetails', 'songdetails', 'audio'] };
   var VID = /\.(mp4|m4v|webm|mkv|mov|avi|ogv|ts|m2ts)$/i;
-  function mk(o, kind) { return { file: o.file, title: o.title || o.label || (o.file || '').split('/').pop(), sub: o.showtitle || K.join(o.artist || o.displayartist) || '', thumb: K.pick(o, 'thumb', 'poster', 'album.thumb') || o.thumbnail || '', kind: kind || (VID.test(o.file || '') ? 'video' : 'audio') }; }
+  function mk(o, kind) { return { file: o.file, title: o.title || o.label || (o.file || '').split('/').pop(), sub: o.showtitle || K.join(o.artist || o.displayartist) || '', thumb: K.pick(o, 'thumb', 'poster', 'album.thumb') || o.thumbnail || '', kind: kind || (VID.test(o.file || '') ? 'video' : 'audio'), duration: o.duration || o.runtime || 0 }; }
   /* spec Kodi -> список элементов {file,title,sub,thumb,kind} */
   L.resolve = function (spec) {
     var P = ['title', 'file', 'art', 'thumbnail'], k = Object.keys(spec)[0];
-    if (KINDS[k]) { var d = KINDS[k], p = {}; p[k] = spec[k]; p.properties = P.concat(k === 'songid' ? ['artist', 'album'] : k === 'episodeid' ? ['showtitle'] : []); return K.rpc(d[0], p).then(function (r) { return [mk(r[d[1]], d[2])]; }); }
+    if (KINDS[k]) { var d = KINDS[k], p = {}; p[k] = spec[k]; p.properties = P.concat(k === 'songid' ? ['artist', 'album', 'duration'] : k === 'episodeid' ? ['showtitle'] : []); return K.rpc(d[0], p).then(function (r) { return [mk(r[d[1]], d[2])]; }); }
     if (k === 'albumid' || k === 'artistid') { var f = {}; f[k] = spec[k]; return K.rpc(A + 'GetSongs', { properties: P.concat(['artist', 'album', 'track']), filter: f, sort: { method: k === 'albumid' ? 'track' : 'album', order: 'ascending' } }).then(function (r) { return (r.songs || []).map(function (s) { return mk(s, 'audio'); }); }); }
     if (k === 'file') return Promise.resolve([mk({ file: spec.file, title: spec.file.split('/').filter(Boolean).pop() })]);
     if (k === 'directory') return K.rpc('Files.GetDirectory', { directory: spec.directory, media: 'files', properties: ['file', 'title'] }).then(function (r) { return (r.files || []).filter(function (f) { return f.filetype !== 'directory'; }).map(function (f) { return mk(f); }); });
@@ -135,7 +136,7 @@
       if (K.local && K.local.i >= 0) K.local.stop();
     }
     var n = cur === 'kodi' ? 'browser' : 'kodi';
-    K.store.set('target', n); paintTarget(); K.toast(n === 'browser' ? t('Воспроизведение: в этом браузере') : t('Воспроизведение: на Kodi'), 'ok'); K.emit('target');
+    K._target = n; K.store.set('target', n); paintTarget(); K.toast(n === 'browser' ? t('Воспроизведение: в этом браузере') : t('Воспроизведение: на Kodi'), 'ok'); K.emit('target');
     if (K.cur && K.cur.path === '/now') K.route(true);
   };
   function paintTarget() { var b = $('#tgt'); if (!b) return; var br = K.target() === 'browser'; b.classList.toggle('on', br); b.innerHTML = K.frag(ic(br ? 'globe' : 'monitor', 20)); b.title = br ? t('Играет в браузере') : t('Играет на Kodi'); }
