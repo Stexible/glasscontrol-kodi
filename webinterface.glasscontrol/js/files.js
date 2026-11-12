@@ -309,7 +309,7 @@
     }
     var pl = ctx.q.pl != null ? +ctx.q.pl : (K.player.props && K.player.props.playlistid === 1 ? 1 : 0);
     return K.rpc('Playlist.GetItems', { playlistid: pl, properties: ['title', 'artist', 'album', 'showtitle', 'season', 'episode', 'art', 'thumbnail', 'duration', 'runtime'] }).then(function (r) {
-      if (!ctx.alive()) return; var items = r.items || [], cur = K.player.id != null && K.player.props && K.player.props.playlistid === pl ? K.player.props.position : -1; console.log('QITEMS', items.length, items[0] && Object.keys(items[0]));
+      if (!ctx.alive()) return; var items = r.items || [], cur = K.player.id != null && K.player.props && K.player.props.playlistid === pl ? K.player.props.position : -1;
       K.qitems = items; K.qpl = pl;
       var totSec = items.reduce(function (a, it) { return a + (it.duration || it.runtime || 0); }, 0);
       var totMin = Math.round(totSec / 60);
@@ -326,13 +326,11 @@
   } };
   K.acts.qplay = function (el) {
     var pos = +el.dataset.i, it = (K.qitems || [])[pos];
-    if (K.target() === 'browser' && it) {
-      var spec = null;
-      if (it.songid) spec = { songid: it.songid };
-      else if (it.musicvideoid) spec = { musicvideoid: it.musicvideoid };
-      else if (it.movieid) spec = { movieid: it.movieid };
-      else if (it.episodeid) spec = { episodeid: it.episodeid };
-      if (spec) return K.play(spec);
+    if (K.target() === 'browser' && it && it.id && it.type) {
+      var t = it.type;
+      var key = t === 'song' ? 'songid' : t === 'musicvideo' ? 'musicvideoid' : t === 'movie' ? 'movieid' : t === 'episode' ? 'episodeid' : (t + 'id');
+      var spec = {}; spec[key] = it.id;
+      return K.play(spec);
     }
     return K.rpc('Player.Open', { item: { playlistid: K.qpl, position: pos } }).then(function () { K.player.refreshSoon(400); K.toast(t('Запускаю воспроизведение'), 'ok'); });
   };
