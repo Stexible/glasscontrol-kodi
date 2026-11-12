@@ -282,7 +282,8 @@ body.nowpage #mini, body.remotepage #mini { display: none !important; } @keyfram
   #searchf input, #searchf kbd { display: none; }
   #searchf.open { position: static; flex: 1 1 100%; background: transparent; padding: 0; }
   #searchf.open input { display: block; flex: 1; width: 100%; }
-  #searchf.open .ic { left: 16px; }
+  #searchf.open .ic { left: 24px !important; }
+  #searchf.open input { padding-left: 52px; }
   #searchf.open ~ #tgt, #searchf.open ~ #scan, #searchf.open ~ .conn { display: none !important; }
   #search-ic, #searchf .ic { pointer-events: auto; cursor: pointer; }
   #totop { bottom: calc(200px + env(safe-area-inset-bottom)) !important; z-index: 100; }
