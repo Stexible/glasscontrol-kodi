@@ -129,15 +129,33 @@
   K.paintTarget = paintTarget;
   K.acts.target = function () {
     var cur = K.target();
-    // stop current playback in the active engine
+    var resumePos = 0, resumeFile = null;
     if (cur === 'kodi') {
-      if (K.player && K.player.id != null) { var pid = K.player.id; K.player.id = null; K.player.props = null; K.player.item = null; K.rpc('Player.Stop', { playerid: pid }).catch(function () { }); document.body.classList.remove('playing', 'video'); K.emit('player', K.player); }
+      if (K.player && K.player.id != null) { resumePos = (typeof K.player.pos === 'function') ? K.player.pos() : 0; resumeFile = K.player.item && K.player.item.file; var pid = K.player.id; K.player.id = null; K.player.props = null; K.player.item = null; K.rpc('Player.Stop', { playerid: pid }).catch(function () { }); document.body.classList.remove('playing', 'video'); K.emit('player', K.player); }
     } else {
-      if (K.local && K.local.i >= 0) K.local.stop();
+      if (K.local && K.local.i >= 0) { resumePos = (K.local.el && K.local.el.currentTime) || 0; resumeFile = (K.local.q && K.local.q[K.local.i]) ? K.local.q[K.local.i].file : (K.local.el && K.local.el.src); K.local.stop(); }
     }
     var n = cur === 'kodi' ? 'browser' : 'kodi';
     K._target = n; K.store.set('target', n); paintTarget(); K.toast(n === 'browser' ? t('Воспроизведение: в этом браузере') : t('Воспроизведение: на Kodi'), 'ok'); K.emit('target');
     if (K.cur && K.cur.path === '/now') K.route(true);
+    // resume playback on the new output
+    if (resumeFile) {
+      if (n === 'browser') {
+        L.playSpecs([{ file: resumeFile }], 0).then(function () {
+          var v = L.el; if (!v) return;
+          var seek = function () { if (resumePos > 0) v.currentTime = resumePos; };
+          if (v.readyState >= 1) seek(); else v.addEventListener('loadedmetadata', seek, { once: true });
+        }).catch(function () { });
+      } else {
+        K.play({ file: resumeFile }).then(function () {
+          setTimeout(function () {
+            if (K.player && K.player.id != null && resumePos > 0) {
+              K.rpc('Player.Seek', { playerid: K.player.id, value: { seconds: Math.round(resumePos) } }).catch(function () { });
+            }
+          }, 1200);
+        }).catch(function () { });
+      }
+    }
   };
   function paintTarget() { var b = $('#tgt'); if (!b) return; var br = K.target() === 'browser'; b.classList.toggle('on', br); b.innerHTML = K.frag(ic(br ? 'globe' : 'tv', 20)); b.title = br ? t('Играет в браузере') : t('Играет на Kodi'); }
 
