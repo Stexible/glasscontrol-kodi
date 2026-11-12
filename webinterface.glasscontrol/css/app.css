@@ -282,7 +282,8 @@ body.nowpage #mini, body.remotepage #mini { display: none !important; } @keyfram
   #searchf input, #searchf kbd { display: none; }
   #searchf.open { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 5; background: var(--glass); padding: 6px 10px; border-radius: 18px; }
   #searchf.open input { display: block; flex: 1; width: 100%; }
-  #search-ic { pointer-events: auto; cursor: pointer; }
+  #search-ic, #searchf .ic { pointer-events: auto; cursor: pointer; }
+  #totop { bottom: calc(200px + env(safe-area-inset-bottom)) !important; z-index: 100; }
   #side { position: fixed; inset: 0 auto 0 0; width: min(300px, 86vw); padding: 10px; transform: translateX(-105%); transition: transform .25s; height: 100dvh; }
   body.drawer #side { transform: none; } body.drawer::before { filter: brightness(.8); }
   #scrim { display: none; position: fixed; inset: 0; z-index: 25; background: rgba(2, 8, 14, .6); } body.drawer #scrim { display: block; }
