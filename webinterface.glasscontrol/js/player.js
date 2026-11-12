@@ -241,7 +241,7 @@
   K.pages.now = {
     nav: 'now', title: function () { return t('Сейчас играет'); },
     render: function (ctx) {
-      var view = ctx.view, bg = null;
+      var view = ctx.view, bg = null, firstDraw = true;
       ctx.cleanup.push(function () {
         if (K.local && K.local._embedded) {
           K.local._embedded = false;
@@ -252,6 +252,7 @@
       });
       function draw() {
         if (view.contains(document.activeElement) && document.activeElement.type === 'range' && (P.drag || (K.local && K.local.drag))) return;
+        var wasFirst = firstDraw; firstDraw = false;
         if (P.id == null && !(K.target() === 'browser' && K.local && K.local.i >= 0)) {
           K.mount(view, html`${K.ui.head(t('Сейчас играет'))}${K.ui.empty('music', t('Сейчас ничего не играет'), t('Выберите фильм или музыку в медиатеке'))}
             <div class="chips" style="justify-content:center"><a class="chip" href="#/movies">${t('Фильмы')}</a><a class="chip" href="#/music">${t('Музыка')}</a><a class="chip" href="#/tv">${t('Сериалы')}</a><a class="chip" href="#/files">${t('Файлы')}</a></div>`);
@@ -263,7 +264,7 @@
         if (K.target() === 'browser' && K.local && K.local.i >= 0 && P.id == null) {
           var it = K.local.q[K.local.i];
           // Already embedded and same track — just refresh play/pause icon
-          if (K.local._embedded && K.local._embeddedFile === it.file) {
+          if (!wasFirst && K.local._embedded && K.local._embeddedFile === it.file && view.querySelector('[data-act="lpp"]')) {
             var btn = view.querySelector('[data-act="lpp"]');
             if (btn) btn.innerHTML = K.frag(ic(K.local.el && K.local.el.paused ? 'play' : 'pause', 26));
             setBg(''); return;
