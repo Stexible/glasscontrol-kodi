@@ -100,7 +100,7 @@
   function lvolUI() {
     var v = L.el; if (!v) return;
     var val = Math.round((v.muted ? 0 : v.volume) * 100);
-    var sl = Math.round(Math.sqrt(val/100)*100);
+    var sl = Math.round(Math.pow(val/100, 2)*100);
     K.$$('input[data-input=\"lvolset\"]').forEach(function (n) {
       if (document.activeElement !== n) n.value = sl;
       n.style.setProperty('--p', sl + '%');
@@ -115,7 +115,7 @@
   K.lvolUI = lvolUI;
   K.on('lvol', lvolUI);
   K.acts.lmute = function () { var v = L.el; if (v) { v.muted = !v.muted; lvolUI(); K.emit('lvol'); } };
-  K.acts.lvolset = function (e) { var v = L.el; if (!v) return; var sl = +e.value; v.volume = Math.pow(sl/100, 2); v.muted = false; lvolUI(); K.emit('lvol'); };
+  K.acts.lvolset = function (e) { var v = L.el; if (!v) return; var sl = +e.value; v.volume = Math.pow(sl/100, 0.5); v.muted = false; lvolUI(); K.emit('lvol'); };
   K.acts.ltheater = function () { L.theater = !L.theater; var v = L.el; if (v) v.classList.toggle('theater', L.theater); var slot = document.getElementById('now-vslot'); if (slot) slot.classList.toggle('theater', L.theater); K.emit('local'); };
   K.acts.lfullscreen = function () { var v = L.el; if (!v) return; if (document.fullscreenElement || document.webkitFullscreenElement) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } else { (v.requestFullscreen || v.webkitRequestFullscreen || v.msRequestFullscreen).call(v); } };
   K.acts.lqgoto = function (el) { L.i = +el.dataset.i; saveQ(); return L.load(); };
