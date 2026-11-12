@@ -139,7 +139,7 @@
     K._target = n; K.store.set('target', n); paintTarget(); K.toast(n === 'browser' ? t('Воспроизведение: в этом браузере') : t('Воспроизведение: на Kodi'), 'ok'); K.emit('target');
     if (K.cur && K.cur.path === '/now') K.route(true);
   };
-  function paintTarget() { var b = $('#tgt'); if (!b) return; var br = K.target() === 'browser'; b.classList.toggle('on', br); b.innerHTML = K.frag(ic(br ? 'globe' : 'monitor', 20)); b.title = br ? t('Играет в браузере') : t('Играет на Kodi'); }
+  function paintTarget() { var b = $('#tgt'); if (!b) return; var br = K.target() === 'browser'; b.classList.toggle('on', br); b.innerHTML = K.frag(ic(br ? 'globe' : 'tv', 20)); b.title = br ? t('Играет в браузере') : t('Играет на Kodi'); }
 
   /* перехват воспроизведения: в режиме «браузер» всё идёт в L */
   var oPlay = K.play, oQueue = K.queue, oList = K.playList;
