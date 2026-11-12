@@ -105,7 +105,7 @@
       if (document.activeElement !== n) n.value = sl;
       n.style.setProperty('--p', sl + '%');
     });
-    K.$$('[data-volnum]').forEach(function (n) { n.textContent = val; });
+    K.$$('[data-volnum]').forEach(function (n) { n.textContent = sl; });
     K.$$('[data-act=\"lmute\"]').forEach(function (n) {
       var small = !!n.closest('#mini');
       n.innerHTML = ic(v.muted ? 'mute' : 'volume', small ? 20 : 24).s;

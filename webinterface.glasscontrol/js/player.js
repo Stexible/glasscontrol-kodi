@@ -140,7 +140,8 @@
   function volUI() {
     var v = P.vol.volume;
     K.$$('input[data-input="volset"]').forEach(function (n) { var sl = Math.round(Math.sqrt((v||0)/100)*100); if (document.activeElement !== n) n.value = sl; n.style.setProperty('--p', sl + '%'); });
-    K.$$('[data-volnum]').forEach(function (n) { n.textContent = v; });
+    var sl0 = Math.round(Math.sqrt((v||0)/100)*100);
+    K.$$('[data-volnum]').forEach(function (n) { n.textContent = sl0; });
     K.$$('[data-act="mute"]').forEach(function (n) { n.innerHTML = ic(P.vol.muted ? 'mute' : 'volume', n.closest('#mini') ? 20 : 24).s; n.classList.toggle('on', !!P.vol.muted); });
   }
   A.volset = function (el) { var sl = +el.value; var v = Math.round(Math.pow(sl/100, 2)*100); P.vol.volume = v; volUI(); volSend(v); };
