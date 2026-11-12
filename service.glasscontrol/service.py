@@ -278,9 +278,16 @@ def main():
         srv = None
     if srv:
         threading.Thread(target=srv.serve_forever, daemon=True).start()
-        win.setProperty('glasscontrol.token', TOKEN)
-        win.setProperty('glasscontrol.port', str(port))
-        xbmc.log('[glasscontrol] backend on :%d' % port, xbmc.LOGINFO)
+        for _ in range(20):
+            try:
+                win.setProperty('glasscontrol.token', TOKEN)
+                win.setProperty('glasscontrol.port', str(port))
+                if win.getProperty('glasscontrol.token') == TOKEN:
+                    break
+            except Exception as e:
+                xbmc.log('[glasscontrol] setProperty retry: %r' % (e,), xbmc.LOGWARNING)
+            time.sleep(0.5)
+        xbmc.log('[glasscontrol] backend on :%d (token=%s)' % (port, win.getProperty('glasscontrol.token')), xbmc.LOGINFO)
     while not monitor.waitForAbort(2):
         pass
     if srv:

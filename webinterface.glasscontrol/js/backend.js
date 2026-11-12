@@ -38,7 +38,17 @@
   };
   /* подсказка, когда бэкенда нет */
   B.hint = function () {
-    return K.html`<div class="hint">${K.ic('plug', 20)}<div>${B.unreachable ? K.t('Серверная часть установлена, но её порт недоступен из браузера.') : K.t('Для этой функции нужен дополнительный компонент «Glass Control Backend» (service.glasscontrol): установите его из zip и перезапустите Kodi.')} <a class="lnk" data-act="berety">${K.t('Проверить снова')}</a></div></div>`;
+    return K.html`<div class="hint">${K.ic('plug', 20)}<div>${B.unreachable ? K.t('Серверная часть установлена, но её порт недоступен из браузера.') : K.t('Для этой функции нужен дополнительный компонент «Glass Control Backend» (service.glasscontrol): установите его из zip и перезапустите Kodi.')} <a class="lnk" data-act="berety">${K.t('Проверить снова')}</a> · <a class="lnk" data-act="brestart">${K.t('Перезапустить backend')}</a></div></div>`;
   };
   K.acts.berety = function () { return B.retry().then(function (ok) { K.toast(ok ? K.t('Серверная часть найдена') : K.t('Серверная часть не найдена'), ok ? 'ok' : 'err'); if (ok) K.route(true); }); };
+  K.acts.brestart = function () {
+    return K.rpc('Addons.SetAddonEnabled', { addonid: 'service.glasscontrol', enabled: false }).then(function () {
+      return new Promise(function (r) { setTimeout(r, 1500); });
+    }).then(function () {
+      return K.rpc('Addons.SetAddonEnabled', { addonid: 'service.glasscontrol', enabled: true });
+    }).then(function () {
+      K.toast(K.t('Backend перезапущен'), 'ok');
+      return B.retry().then(function (ok) { if (ok) K.route(true); });
+    }).catch(K.err);
+  };
 })();
