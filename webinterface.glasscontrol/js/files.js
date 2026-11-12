@@ -327,8 +327,8 @@
   K.acts.qplay = function (el) {
     var pos = +el.dataset.i, it = (K.qitems || [])[pos];
     if (K.target() === 'browser' && it && it.id && it.type) {
-      var t = it.type;
-      var key = t === 'song' ? 'songid' : t === 'musicvideo' ? 'musicvideoid' : t === 'movie' ? 'movieid' : t === 'episode' ? 'episodeid' : (t + 'id');
+      var typ = it.type;
+      var key = typ === 'song' ? 'songid' : typ === 'musicvideo' ? 'musicvideoid' : typ === 'movie' ? 'movieid' : typ === 'episode' ? 'episodeid' : (typ + 'id');
       var spec = {}; spec[key] = it.id;
       return K.play(spec);
     }
