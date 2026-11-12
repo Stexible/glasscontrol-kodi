@@ -282,11 +282,12 @@ body.nowpage #mini, body.remotepage #mini { display: none !important; } @keyfram
   #searchf input, #searchf kbd { display: none; }
   #searchf.open { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 5; background: var(--glass); padding: 6px 10px; border-radius: 18px; }
   #searchf.open input { display: block; flex: 1; width: 100%; }
+  #search-ic { pointer-events: auto; cursor: pointer; }
   #side { position: fixed; inset: 0 auto 0 0; width: min(300px, 86vw); padding: 10px; transform: translateX(-105%); transition: transform .25s; height: 100dvh; }
   body.drawer #side { transform: none; } body.drawer::before { filter: brightness(.8); }
   #scrim { display: none; position: fixed; inset: 0; z-index: 25; background: rgba(2, 8, 14, .6); } body.drawer #scrim { display: block; }
   body.drawer #tabbar, body.drawer #mini, body.drawer #lbar { display: none !important; }
-  .menu-btn { display: inline-grid !important; } .search kbd, .conn span { display: none; } .conn { padding: 0 12px; }
+  .menu-btn { display: none !important; } .search kbd, .conn span { display: none; } .conn { padding: 0 12px; }
   #view { padding-bottom: 190px; }
   #tabbar { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; z-index: 45; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); padding: 6px; border-radius: 26px; }
   #tabbar a, #tabbar button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 2px; border-radius: 18px; font-size: 11px; color: var(--ink); opacity: .72; } #tabbar .on { color: var(--accent); opacity: 1; background: rgba(var(--ac), .14); }
