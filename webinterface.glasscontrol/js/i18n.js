@@ -11,6 +11,7 @@
     try { localStorage.setItem('glass.lang', l); } catch (e) { }
     K.lang = l;
     try { if (K.drawNav) K.drawNav(); } catch (e) { }
+    try { if (K.refreshTop) K.refreshTop(); } catch (e) { }
     try { K.route(true); } catch (e) { console.error('route err', e); }
   };
   K.t = function (s, p) {

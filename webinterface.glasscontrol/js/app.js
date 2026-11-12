@@ -262,6 +262,11 @@
     K.on('offline', function () { $('#conn-t').textContent = t('Нет связи'); }); K.on('online', function () { $('#conn-t').textContent = t('Подключено'); });
     $('#conn').addEventListener('click', function () { K.toast((K.st.verText || 'Kodi') + ' · ' + location.hostname, 'ok'); });
   }
+  K.refreshTop = function () {
+    try { $('#q').placeholder = t('Поиск по медиатеке'); } catch (e) { }
+    try { $('#conn-t').textContent = (K.st && K.st.online === false) ? t('Нет связи') : t('Подключено'); } catch (e) { }
+    try { $('#offline').innerHTML = K.frag(html`${ic('plug', 20)}<span>${t('Нет связи с Kodi. Пробую переподключиться…')}</span>`); } catch (e) { }
+  };
   K.on('target', function () { if (K.paintTarget) K.paintTarget(); });
 
   K.start = function () {
