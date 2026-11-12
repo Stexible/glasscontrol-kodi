@@ -13,7 +13,7 @@
     // Не перерисовываем страницу «Сейчас играет» / «Очередь»: иначе сбрасывается встроенный плеер и очередь
     var cur = (K.cur && K.cur.seg && K.cur.seg[0]) || '';
     if (cur !== 'now' && cur !== 'queue') {
-      try { K.route(true); } catch (e) { /* ignore */ }
+      try { K.route(true); } catch (e) { console.error('route err', e); }
     }
   };
   K.t = function (s, p) {

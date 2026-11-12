@@ -81,6 +81,7 @@
   K.dropCache = dropCache;
   K.go = function (p) { if (location.hash === '#' + p) K.route(true); else location.hash = p; };
   K.route = function (force) {
+    console.log('ROUTE', force, 'cur=', K.cur && K.cur.seg && K.cur.seg[0], 'lang=', K.lang);
     var r = parse(), name = r.seg[0] || 'home', page = K.pages[name], view = $('#view'), my = ++token;
     /* уходим со страницы: либо кладём в кэш, либо чистим */
     if (active) {
