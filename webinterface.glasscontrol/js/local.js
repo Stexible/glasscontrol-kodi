@@ -74,6 +74,13 @@
       L.q = items; L.i = Math.min(start || 0, items.length - 1); saveQ(); return L.load();
     }).catch(K.err);
   };
+  L.fromKodi = function (items, idx) {
+    var arr = (items || []).map(function (it) { return mk(it); });
+    L.q = arr;
+    L.i = (typeof idx === 'number' && idx >= 0 && idx < arr.length) ? idx : (arr.length ? 0 : -1);
+    saveQ();
+    return L.i;
+  };
   L.load = function () {
     var it = L.q[L.i]; if (!it) return;
     return url(it.file).then(function (u) {
@@ -129,33 +136,67 @@
   K.paintTarget = paintTarget;
   K.acts.target = function () {
     var cur = K.target();
-    var resumePos = 0, resumeFile = null;
+    var resumePos = 0, resumeFile = null, resumeIdx = -1, resumePl = 0, resumeQ = null;
+    var capturePromise = Promise.resolve();
     if (cur === 'kodi') {
-      if (K.player && K.player.id != null) { resumePos = (typeof K.player.pos === 'function') ? K.player.pos() : 0; resumeFile = K.player.item && K.player.item.file; var pid = K.player.id; K.player.id = null; K.player.props = null; K.player.item = null; K.rpc('Player.Stop', { playerid: pid }).catch(function () { }); document.body.classList.remove('playing', 'video'); K.emit('player', K.player); }
+      if (K.player && K.player.id != null) {
+        resumePos = (typeof K.player.pos === 'function') ? K.player.pos() : 0;
+        resumeFile = K.player.item && K.player.item.file;
+        resumeIdx = (K.player.props && typeof K.player.props.position === 'number') ? K.player.props.position : -1;
+        resumePl = (K.player.props && typeof K.player.props.playlistid === 'number') ? K.player.props.playlistid : 0;
+        var pid = K.player.id;
+        capturePromise = K.rpc('Playlist.GetItems', { playlistid: resumePl, properties: ['title', 'artist', 'album', 'showtitle', 'season', 'episode', 'art', 'thumbnail', 'duration', 'runtime', 'file'], limits: { start: 0, end: 300 } }).then(function (r) { resumeQ = r.items || []; }).catch(function () { resumeQ = null; });
+        K.player.id = null; K.player.props = null; K.player.item = null;
+        K.rpc('Player.Stop', { playerid: pid }).catch(function () { });
+        document.body.classList.remove('playing', 'video'); K.emit('player', K.player);
+      }
     } else {
-      if (K.local && K.local.i >= 0) { resumePos = (K.local.el && K.local.el.currentTime) || 0; resumeFile = (K.local.q && K.local.q[K.local.i]) ? K.local.q[K.local.i].file : (K.local.el && K.local.el.src); K.local.stop(); }
+      if (K.local && K.local.i >= 0) {
+        resumePos = (K.local.el && K.local.el.currentTime) || 0;
+        resumeFile = (K.local.q && K.local.q[K.local.i]) ? K.local.q[K.local.i].file : (K.local.el && K.local.el.src);
+        resumeQ = (L.q || []).slice();
+        resumeIdx = L.i;
+        L.stop();
+      }
     }
-    var n = cur === 'kodi' ? 'browser' : 'kodi';
-    K._target = n; K.store.set('target', n); paintTarget(); K.toast(n === 'browser' ? t('Воспроизведение: в этом браузере') : t('Воспроизведение: на Kodi'), 'ok'); K.emit('target');
-    if (K.cur && K.cur.path === '/now') K.route(true);
-    // resume playback on the new output
-    if (resumeFile) {
+    capturePromise.then(function () {
+      var n = cur === 'kodi' ? 'browser' : 'kodi';
+      K._target = n; K.store.set('target', n); paintTarget(); K.toast(n === 'browser' ? t('Воспроизведение: в этом браузере') : t('Воспроизведение: на Kodi'), 'ok'); K.emit('target');
+      if (K.cur && K.cur.path === '/now') K.route(true);
+      if (!resumeFile) return;
       if (n === 'browser') {
-        L.playSpecs([{ file: resumeFile }], 0).then(function () {
-          var v = L.el; if (!v) return;
-          var seek = function () { if (resumePos > 0) v.currentTime = resumePos; };
-          if (v.readyState >= 1) seek(); else v.addEventListener('loadedmetadata', seek, { once: true });
-        }).catch(function () { });
+        if (resumeQ && resumeQ.length) {
+          L.fromKodi(resumeQ, resumeIdx >= 0 ? resumeIdx : 0);
+          var lp = L.load();
+          var doSeek = function () { var v = L.el; if (v && resumePos > 0) { var seek = function () { v.currentTime = resumePos; }; if (v.readyState >= 1) seek(); else v.addEventListener('loadedmetadata', seek, { once: true }); } };
+          if (lp && typeof lp.then === 'function') lp.then(doSeek); else doSeek();
+        } else {
+          L.playSpecs([{ file: resumeFile }], 0).then(function () {
+            var v = L.el; if (!v) return;
+            var seek = function () { if (resumePos > 0) v.currentTime = resumePos; };
+            if (v.readyState >= 1) seek(); else v.addEventListener('loadedmetadata', seek, { once: true });
+          }).catch(function () { });
+        }
       } else {
-        K.play({ file: resumeFile }).then(function () {
+        var pl = (resumeQ && resumeIdx >= 0 && resumeQ[resumeIdx] && resumeQ[resumeIdx].kind === 'video') ? 1 : 0;
+        K.rpc('Playlist.Clear', { playlistid: pl }).then(function () {
+          var chain = Promise.resolve();
+          (resumeQ || []).forEach(function (it) {
+            chain = chain.then(function () { return K.rpc('Playlist.Add', { playlistid: pl, item: { file: it.file } }); });
+          });
+          return chain;
+        }).then(function () {
+          return K.rpc('Player.Open', { item: { playlistid: pl, position: resumeIdx >= 0 ? resumeIdx : 0 } });
+        }).then(function () {
+          K.player.refreshSoon(400);
           setTimeout(function () {
             if (K.player && K.player.id != null && resumePos > 0) {
               K.rpc('Player.Seek', { playerid: K.player.id, value: { seconds: Math.round(resumePos) } }).catch(function () { });
             }
           }, 1200);
-        }).catch(function () { });
+        }).catch(K.err);
       }
-    }
+    });
   };
   function paintTarget() { var b = $('#tgt'); if (!b) return; var br = K.target() === 'browser'; b.classList.toggle('on', br); b.innerHTML = K.frag(ic(br ? 'globe' : 'tv', 20)); b.title = br ? t('Играет в браузере') : t('Играет на Kodi'); }
 

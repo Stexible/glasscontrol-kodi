@@ -308,7 +308,7 @@
       return;
     }
     var pl = ctx.q.pl != null ? +ctx.q.pl : (K.player.props && K.player.props.playlistid === 1 ? 1 : 0);
-    return K.rpc('Playlist.GetItems', { playlistid: pl, properties: ['title', 'artist', 'album', 'showtitle', 'season', 'episode', 'art', 'thumbnail', 'duration', 'runtime'] }).then(function (r) {
+    return K.rpc('Playlist.GetItems', { playlistid: pl, properties: ['title', 'artist', 'album', 'showtitle', 'season', 'episode', 'art', 'thumbnail', 'duration', 'runtime', 'file'] }).then(function (r) {
       if (!ctx.alive()) return; var items = r.items || [], cur = K.player.id != null && K.player.props && K.player.props.playlistid === pl ? K.player.props.position : -1;
       K.qitems = items; K.qpl = pl;
       var totSec = items.reduce(function (a, it) { return a + (it.duration || it.runtime || 0); }, 0);
@@ -326,6 +326,10 @@
   } };
   K.acts.qplay = function (el) {
     var pos = +el.dataset.i, it = (K.qitems || [])[pos];
+    if (K.target() === 'browser' && K.qitems && K.qitems.length) {
+      if (K.local && typeof K.local.fromKodi === 'function') K.local.fromKodi(K.qitems, pos);
+      if (K.local && typeof K.local.load === 'function') return K.local.load();
+    }
     if (K.target() === 'browser' && it && it.id && it.type) {
       var typ = it.type;
       var key = typ === 'song' ? 'songid' : typ === 'musicvideo' ? 'musicvideoid' : typ === 'movie' ? 'movieid' : typ === 'episode' ? 'episodeid' : (typ + 'id');
