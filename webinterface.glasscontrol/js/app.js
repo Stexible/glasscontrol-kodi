@@ -89,6 +89,8 @@
     }
     active = null;
     document.body.classList.remove('drawer');
+    document.body.classList.toggle('nowpage', name === 'now');
+    document.body.classList.toggle('remotepage', name === 'remote');
     K.cur = r; drawNav();
     if (force) dropCache(r.key);
     var hit = CACHE[r.key];
