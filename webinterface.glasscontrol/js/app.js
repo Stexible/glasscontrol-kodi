@@ -91,6 +91,7 @@
     document.body.classList.remove('drawer');
     document.body.classList.toggle('nowpage', name === 'now');
     document.body.classList.toggle('remotepage', name === 'remote');
+    var mn = $('#mini'); if (mn) { if (name === 'now') mn.classList.add('mini-hidden'); else mn.classList.remove('mini-hidden'); }
     K.cur = r; drawNav();
     if (force) dropCache(r.key);
     var hit = CACHE[r.key];
@@ -120,6 +121,11 @@
       else fin();
     } catch (e) { console.error(e); K.mount(view, K.ui.error(e, true)); }
   };
+  window.addEventListener('scroll', function () {
+    if (!document.body.classList.contains('nowpage')) return;
+    var m = document.getElementById('mini'); if (!m) return;
+    if (window.scrollY > 120) m.classList.remove('mini-hidden'); else m.classList.add('mini-hidden');
+  }, { passive: true });
   window.addEventListener('hashchange', function () { K.route(); });
   /* изменение медиатеки: активная страница обновляется мягко, кэшированные помечаются устаревшими */
   K.on('library', function () {
