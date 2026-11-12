@@ -241,7 +241,6 @@
   K.pages.now = {
     nav: 'now', title: function () { return t('Сейчас играет'); },
     render: function (ctx) {
-      console.log('NOW RENDER', 'lang=', K.lang, 'id=', P.id);
       var view = ctx.view, bg = null, firstDraw = true;
       ctx.cleanup.push(function () {
         if (K.local && K.local._embedded) {
