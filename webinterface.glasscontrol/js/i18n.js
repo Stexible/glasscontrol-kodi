@@ -10,7 +10,11 @@
     try { localStorage.setItem('glass.lang', l); } catch (e) { /* ignore */ }
     K.lang = l;
     try { if (K.drawNav) K.drawNav(); } catch (e) { /* ignore */ }
-    try { K.route(true); } catch (e) { /* ignore */ }
+    // Не перерисовываем страницу «Сейчас играет» / «Очередь»: иначе сбрасывается встроенный плеер и очередь
+    var cur = (K.cur && K.cur.seg && K.cur.seg[0]) || '';
+    if (cur !== 'now' && cur !== 'queue') {
+      try { K.route(true); } catch (e) { /* ignore */ }
+    }
   };
   K.t = function (s, p) {
     var r = (K.lang === 'ru') ? s : (K.EN[s] || s);
