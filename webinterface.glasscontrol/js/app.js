@@ -253,10 +253,13 @@
     $('#scan').innerHTML = '<i></i><span></span>';
     $('#offline').innerHTML = K.frag(html`${ic('plug', 20)}<span>${t('Нет связи с Kodi. Пробую переподключиться…')}</span>`);
     $('#searchf').addEventListener('submit', function (e) { e.preventDefault(); var v = $('#q').value.trim(); if (v) K.go('/search?q=' + encodeURIComponent(v)); });
+    $('#search-ic').addEventListener('click', function () { $('#searchf').classList.toggle('open'); if ($('#searchf').classList.contains('open')) $('#q').focus(); });
+    document.addEventListener('click', function (e) { if (!e.target.closest('#searchf')) $('#searchf').classList.remove('open'); });
     document.addEventListener('keydown', function (e) {
       if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); $('#q').focus(); }
     });
     K.on('offline', function () { $('#conn-t').textContent = t('Нет связи'); }); K.on('online', function () { $('#conn-t').textContent = t('Подключено'); });
+    $('#conn').addEventListener('click', function () { K.toast((K.st.verText || 'Kodi') + ' · ' + location.hostname, 'ok'); });
   }
   K.on('target', function () { if (K.paintTarget) K.paintTarget(); });
 
