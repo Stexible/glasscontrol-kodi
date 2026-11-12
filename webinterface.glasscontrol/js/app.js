@@ -109,6 +109,7 @@
     if (!page) { K.mount(view, K.ui.empty('info', t('Страница не найдена'))); return; }
     document.title = (page.title ? page.title(r) + ' · ' : '') + 'Glass Control';
     view.innerHTML = K.frag(K.ui.loading());
+    view._sig = undefined;
     var ctx = { view: view, args: r.seg.slice(1), q: r.q, path: r.path, key: r.key, cleanup: [], ok: false, cacheable: !!(page.cache && page.cache(r)), alive: function () { return my === token; } };
     active = ctx;
     var fin = function () { ctx.ok = true; };
