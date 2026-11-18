@@ -55,7 +55,7 @@
       return srcPromise.then(function (beSrc) {
         return K.rpc('Files.GetSources', { media: media }).then(function (r) {
           if (!ctx.alive()) return; var src = (beSrc !== null) ? beSrc : (r.sources || []);
-        K.mount(ctx.view, html`${K.ui.head(title, { sub: t('Источники и файловый менеджер'), right: bar })}${o.tabs}
+        K.mount(ctx.view, html`${K.ui.head(title, { sub: (o.sub != null ? o.sub : t('Источники и файловый менеджер')), right: bar })}${o.tabs}
           ${K.be.ok ? '' : ''}<div class="glass panel list" style="padding:8px">${src.length ? src.map(function (s) {
             return K.ui.row({ icon: 'folder', img: '', title: s.label, sub: s.file, href: link(s.file),
               right: html`<span class="srcrow-a"><button class="icon-btn" data-act="srcscan" data-v="${libKind}" data-p="${s.file}" aria-label="${t('Обновить')}" title="${t('Обновить')}">${ic('refresh', 18)}</button><button class="icon-btn" data-act="srcdel" data-m="${media}" data-n="${s.label}" data-p="${s.file}" aria-label="${t('Удалить')}" title="${t('Удалить источник')}">${ic('trash', 18)}</button></span>` }); }) : K.ui.empty('folder', t('Источники не настроены'), t('Добавьте источник кнопкой «⚙» справа вверху'))}</div>

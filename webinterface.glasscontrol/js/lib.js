@@ -94,10 +94,10 @@
 
 
   /* ---------- вкладки раздела (с «Папки») и панель обслуживания медиатеки ---------- */
-  var SEC = { movies: { base: '/movies', tabs: [['', 'Фильмы'], ['folders', 'Папки']], media: 'video', content: 'movies' },
-    tv: { base: '/tv', tabs: [['', 'Сериалы'], ['folders', 'Папки']], media: 'video', content: 'tvshows' },
-    mv: { base: '/mv', tabs: [['', 'Клипы'], ['folders', 'Папки']], media: 'video', content: 'musicvideos' },
-    music: { base: '/music', tabs: [['', 'Альбомы'], ['artists', 'Исполнители'], ['songs', 'Треки'], ['folders', 'Папки']], media: 'music' } };
+  var SEC = { movies: { name: 'Фильмы', base: '/movies', tabs: [['', 'Фильмы'], ['folders', 'Папки']], media: 'video', content: 'movies' },
+    tv: { name: 'Сериалы', base: '/tv', tabs: [['', 'Сериалы'], ['folders', 'Папки']], media: 'video', content: 'tvshows' },
+    mv: { name: 'Клипы', base: '/mv', tabs: [['', 'Клипы'], ['folders', 'Папки']], media: 'video', content: 'musicvideos' },
+    music: { name: 'Музыка', base: '/music', tabs: [['', 'Альбомы'], ['artists', 'Исполнители'], ['songs', 'Треки'], ['folders', 'Папки']], media: 'music' } };
   K.secTabs = function (sec, cur) {
     var S = SEC[sec];
     return html`<div class="tabs">${S.tabs.map(function (x) { return html`<a class="${x[0] === (cur || '') ? 'on' : ''}" href="#${S.base}${x[0] ? '/' + x[0] : ''}">${t(x[1])}</a>`; })}</div>`;
@@ -171,7 +171,7 @@
   var VSORT = [['title', 'По названию'], ['dateadded', 'Недавно добавленные'], ['year', 'По году'], ['rating', 'По рейтингу'], ['lastplayed', 'Недавно смотрел'], ['random', 'Случайно']];
   var DESC = { dateadded: 'descending', rating: 'descending', lastplayed: 'descending', year: 'descending' };
   function isList(r, secs) { return r.seg.length === 1 || (r.seg.length === 2 && secs.indexOf(r.seg[1]) >= 0); }
-  function folders(sec, ctx) { return K.browse(ctx, { media: SEC[sec].media, base: SEC[sec].base + '/folders', sec: sec, tabs: K.secTabs(sec, 'folders'), title: t(SEC[sec].tabs[0][1]) }); }
+  function folders(sec, ctx) { return K.browse(ctx, { media: SEC[sec].media, base: SEC[sec].base + '/folders', sec: sec, tabs: K.secTabs(sec, 'folders'), title: t(SEC[sec].name), sub: '' }); }
   K.pages.movies = { title: function () { return t('Фильмы'); }, cache: function (r) { return isList(r, ['folders']); }, render: function (ctx) {
     if (ctx.args[0] === 'folders') return folders('movies', ctx);
     if (ctx.args[0]) return movieDetail(ctx, +ctx.args[0]);
