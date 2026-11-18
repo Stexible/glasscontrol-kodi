@@ -183,6 +183,8 @@
   function libUpdate0(kind, o) {
     o = o || {}; var V = kind === 'video', lib = V ? 'VideoLibrary.' : 'AudioLibrary.', sp = { showdialogs: false };
     S.job = 'scan';
+    if (V) S.video = true; else S.music = true;
+    paint();
     // Без явной папки сканируем только зарегистрированные источники этого типа (а не всё подряд).
     var scanPromise;
     if (o.directory) {
