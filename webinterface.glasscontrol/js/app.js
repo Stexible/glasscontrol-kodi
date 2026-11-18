@@ -182,9 +182,23 @@
   /* Быстрое обновление: сканирование находит только новые/изменённые файлы (ничего не пересоздаётся), затем чистка убирает записи о пропавших */
   function libUpdate0(kind, o) {
     o = o || {}; var V = kind === 'video', lib = V ? 'VideoLibrary.' : 'AudioLibrary.', sp = { showdialogs: false };
-    if (o.directory) sp.directory = o.directory;
     S.job = 'scan';
-    return K.rpc(lib + 'Scan', sp).then(function () { K.toast(t('Сканирование запущено'), 'ok'); setTimeout(poll, 600); return o.clean === false ? null : new Promise(function (r) { setTimeout(r, 1500); }).then(function () { return idle(kind); }); })
+    // Без явной папки сканируем только зарегистрированные источники этого типа (а не всё подряд).
+    var scanPromise;
+    if (o.directory) {
+      sp.directory = o.directory;
+      scanPromise = K.rpc(lib + 'Scan', sp);
+    } else {
+      scanPromise = K.rpc('Files.GetSources', { media: V ? 'video' : 'music' }).then(function (r) {
+        var srcs = (r && r.sources) ? r.sources : [];
+        var paths = srcs.map(function (s) { return s.file; }).filter(Boolean);
+        if (!paths.length) return K.rpc(lib + 'Scan', { showdialogs: false });
+        var chain = Promise.resolve();
+        paths.forEach(function (p) { chain = chain.then(function () { return K.rpc(lib + 'Scan', { showdialogs: false, directory: p }); }); });
+        return chain;
+      }).catch(function () { return K.rpc(lib + 'Scan', { showdialogs: false }); });
+    }
+    return scanPromise.then(function () { K.toast(t('Сканирование запущено'), 'ok'); setTimeout(poll, 600); return o.clean === false ? null : new Promise(function (r) { setTimeout(r, 1500); }).then(function () { return idle(kind); }); })
       .then(function () { if (o.clean === false) return; S.job = 'clean'; var cp = { showdialogs: false }; if (V && o.content) cp.content = o.content; return K.rpc(lib + 'Clean', cp).then(function () { setTimeout(poll, 600); return new Promise(function (r) { setTimeout(r, 1500); }).then(function () { return idle(kind); }); }); })
       .then(function () { if (o.clean !== false) K.toast(t('Обновление медиатеки завершено'), 'ok'); K.emit('library'); }).catch(K.err);
   }
