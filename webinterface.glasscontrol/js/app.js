@@ -8,7 +8,7 @@
     ['/files', 'folder', 'Файлы'], ['/fav', 'star', 'Избранное'], ['/queue', 'list', 'Очередь'], ['/pvr', 'radio', 'ТВ и радио'], 0,
     ['/addons', 'box', 'Дополнения'], ['/settings', 'sliders', 'Настройки'], ['/remote', 'remote', 'Пульт'], ['/system', 'monitor', 'Система']
   ];
-  var TABS = [['/', 'home', 'Главная'], ['/now', 'play', 'Играет'], ['/movies', 'film', 'Медиатека'], ['/remote', 'remote', 'Пульт'], 'menu'];
+  var TABS = [['/', 'home', 'Главная'], ['/now', 'play', 'Играет'], ['/music', 'music', 'Медиатека'], ['/remote', 'remote', 'Пульт'], 'menu'];
 
   /* ---------- тема и акцент ---------- */
   K.ACCENTS = [
@@ -52,7 +52,7 @@
       <div class="side-foot"><div class="seg">${['ru', 'en'].map(function (l) { return html`<button class="${K.lang === l ? 'on' : ''}" data-act="lang" data-v="${l}">${l.toUpperCase()}</button>`; })}</div><span id="ver">${K.st.verText || ''}</span></div>`, 'nav|' + cur + '|' + !!pl + '|' + !!hidePvr + '|' + K.lang + '|' + (K.st.verText || '') + '|' + hidden.join(','));
     K.mount($('#tabbar'), html`${TABS.filter(function (x) { return x === 'menu' || hidden.indexOf(x[0]) < 0; }).map(function (x) {
       if (x === 'menu') return html`<button data-act="drawer">${ic('menu', 22)}<span>${t('Меню')}</span></button>`;
-      var on = x[0] === cur || (x[0] === '/movies' && ['/tv', '/music', '/mv'].indexOf(cur) >= 0);
+      var on = x[0] === cur || (x[0] === '/music' && ['/movies', '/tv', '/mv'].indexOf(cur) >= 0);
       return html`<a class="${on ? 'on' : ''}" href="#${x[0]}">${ic(x[1], 22)}<span>${t(x[2])}</span></a>`; })}`, 'tab|' + cur);
   }
   K.NAV = NAV;
@@ -99,15 +99,18 @@
       view.textContent = ''; view.appendChild(hit.frag); view.classList.remove('route-in'); void view.offsetWidth; view.classList.add('route-in'); active = hit.ctx; active.alive = function () { return my === token; };
       delete CACHE[r.key]; ORDER = ORDER.filter(function (k) { return k !== r.key; });
       document.title = (page.title ? page.title(r) + ' · ' : '') + 'Glass Control';
+      var _ry = hit.y;
+      try { var _ss = sessionStorage.getItem('gc.scroll.' + r.path); if (_ss != null) _ry = +_ss; } catch (e) { }
       if (hit.dirty && active.refresh) {
-        active.refresh().then(function () { window.scrollTo(0, hit.y); });
+        active.refresh().then(function () { window.scrollTo(0, _ry); });
       } else {
-        window.scrollTo(0, hit.y);
+        window.scrollTo(0, _ry);
       }
       return;
     }
     window.scrollTo(0, 0);
     view.classList.remove('route-in'); void view.offsetWidth; view.classList.add('route-in');
+    try { var _sy = sessionStorage.getItem('gc.scroll.' + r.path); if (_sy != null) { var _y = +_sy; setTimeout(function () { window.scrollTo(0, _y); }, 60); } } catch (e) { }
     if (!page) { K.mount(view, K.ui.empty('info', t('Страница не найдена'))); return; }
     document.title = (page.title ? page.title(r) + ' · ' : '') + 'Glass Control';
     view.innerHTML = K.frag(K.ui.loading());
@@ -125,6 +128,14 @@
     if (!document.body.classList.contains('nowpage')) return;
     var m = document.getElementById('mini'); if (!m) return;
     if (window.scrollY > 120) m.classList.remove('mini-hidden'); else m.classList.add('mini-hidden');
+  }, { passive: true });
+  var _scrollSaveT = null;
+  window.addEventListener('scroll', function () {
+    if (!K.cur || !K.cur.path) return;
+    clearTimeout(_scrollSaveT);
+    _scrollSaveT = setTimeout(function () {
+      try { sessionStorage.setItem('gc.scroll.' + K.cur.path, String(window.scrollY)); } catch (e) { /* ignore */ }
+    }, 200);
   }, { passive: true });
   window.addEventListener('hashchange', function () { K.route(); });
   /* изменение медиатеки: активная страница обновляется мягко, кэшированные помечаются устаревшими */
