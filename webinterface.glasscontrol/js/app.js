@@ -101,16 +101,17 @@
       document.title = (page.title ? page.title(r) + ' · ' : '') + 'Glass Control';
       var _ry = hit.y;
       try { var _ss = sessionStorage.getItem('gc.scroll.' + r.path); if (_ss != null) _ry = +_ss; } catch (e) { }
+      var _doScroll = function () { window.scrollTo(0, _ry); };
       if (hit.dirty && active.refresh) {
-        active.refresh().then(function () { window.scrollTo(0, _ry); });
+        active.refresh().then(function () { _doScroll(); setTimeout(_doScroll, 50); setTimeout(_doScroll, 200); });
       } else {
-        window.scrollTo(0, _ry);
+        _doScroll(); setTimeout(_doScroll, 50); setTimeout(_doScroll, 200);
       }
       return;
     }
     window.scrollTo(0, 0);
     view.classList.remove('route-in'); void view.offsetWidth; view.classList.add('route-in');
-    try { var _sy = sessionStorage.getItem('gc.scroll.' + r.path); if (_sy != null) { var _y = +_sy; setTimeout(function () { window.scrollTo(0, _y); }, 60); } } catch (e) { }
+    try { var _sy = sessionStorage.getItem('gc.scroll.' + r.path); if (_sy != null) { var _y = +_sy; var _ds = function () { window.scrollTo(0, _y); }; _ds(); setTimeout(_ds, 60); setTimeout(_ds, 200); setTimeout(_ds, 500); } } catch (e) { }
     if (!page) { K.mount(view, K.ui.empty('info', t('Страница не найдена'))); return; }
     document.title = (page.title ? page.title(r) + ' · ' : '') + 'Glass Control';
     view.innerHTML = K.frag(K.ui.loading());
@@ -130,6 +131,10 @@
     if (window.scrollY > 120) m.classList.remove('mini-hidden'); else m.classList.add('mini-hidden');
   }, { passive: true });
   var _scrollSaveT = null;
+  document.addEventListener('click', function () {
+    if (!K.cur || !K.cur.path) return;
+    try { sessionStorage.setItem('gc.scroll.' + K.cur.path, String(window.scrollY)); } catch (e) { /* ignore */ }
+  }, true);
   window.addEventListener('scroll', function () {
     if (!K.cur || !K.cur.path) return;
     clearTimeout(_scrollSaveT);
