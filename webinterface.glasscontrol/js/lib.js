@@ -104,11 +104,10 @@
   };
   K.libBar = function (sec) {
     var S = SEC[sec], kind = S.media;
-    return html`<div class="libbar"><button class="btn sm" data-act="lscan" data-v="${kind}" title="${t('Найти новые и изменённые файлы')}">${ic('refresh', 16)} ${t('Обновить')}</button>
-      <button class="btn sm" data-act="lclean" data-v="${kind}" ${S.content ? raw('data-c="' + S.content + '"') : ''} title="${t('Полностью сбросить базу медиатеки, чтобы собрать её заново')}">${ic('eraser', 16)} ${t('Очистить')}</button>
+    return html`<div class="libbar"><button class="btn sm" data-act="lscan" data-v="${kind}" ${S.content ? raw('data-c="' + S.content + '"') : ''} title="${t('Обновить: сканировать источники и убрать удалённые записи')}">${ic('refresh', 16)} ${t('Обновить')}</button>
       <button class="icon-btn" data-act="srcs" data-v="${kind}" aria-label="${t('Источники')}" title="${t('Источники')}">${ic('sliders', 18)}</button></div>`;
   };
-  K.acts.lscan = function (el) { return K.libScanOnly(el.dataset.v); };
+  K.acts.lscan = function (el) { return K.libUpdate(el.dataset.v, el.dataset.c ? { content: el.dataset.c } : {}); };
 
   /* ---------- универсальная страница-список ---------- */
   function setQ(q, patch) {
