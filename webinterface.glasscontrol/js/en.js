@@ -444,5 +444,13 @@ K.EN = {
 "Адрес (smb://host/ или nfs://host/)": "Address (smb://host/ or nfs://host/)",
 "Проверим соединение и подставим путь с логином/паролем в поле «Путь»." : "We'll test the connection and put the path with login/password into the “Path” field.",
 "Укажите адрес": "Enter an address",
-"Неверный адрес": "Invalid address"
+"Неверный адрес": "Invalid address",
+"Обновить: сканировать источники и убрать удалённые записи": "Update: scan sources and remove missing entries",
+"Сканировать эту папку": "Scan this folder",
+"Сканировать источники видео и убрать удалённые": "Scan video sources and remove missing entries",
+"Сканировать источники музыки и убрать удалённые": "Scan music sources and remove missing entries",
+"Полностью очистить видео": "Fully clear video",
+"Полностью очистить музыку": "Fully clear music",
+"Полностью сбросить базу видео (фильмы, сериалы, клипы): все записи, отметки просмотра, точки возобновления и оценки. Файлы не удаляются; создаётся копия *.glassbak. После этого нажмите «Обновить видео».": "Fully reset the video database (movies, TV shows, music videos): all entries, watched marks, resume points and ratings. Files are not deleted; a *.glassbak copy is created. Then press “Update video”.",
+"Полностью сбросить базу музыки: все записи, отметки и оценки. Файлы не удаляются; создаётся копия *.glassbak. После этого нажмите «Обновить музыку».": "Fully reset the music database: all entries, marks and ratings. Files are not deleted; a *.glassbak copy is created. Then press “Update music”."
 };

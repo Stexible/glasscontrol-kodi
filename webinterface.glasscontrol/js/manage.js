@@ -295,8 +295,11 @@
         <div class="split cols">
           <div class="glass panel"><h3 class="ph3">${t('О системе')}</h3><dl class="kv">${info.map(function (x) { return html`<div><dt>${x[0]}</dt><dd>${x[1]}</dd></div>`; })}</dl></div>
           <div class="glass panel"><h3 class="ph3">${t('Медиатека')}</h3><div class="btns"><button class="btn primary" data-act="quick" data-v="all">${ic('refresh', 16)} ${t('Быстрое обновление')}</button></div><div class="btns" style="margin-top:12px">
-            <button class="btn" data-act="lib" data-v="scanv">${ic('scan', 16)} ${t('Обновить видео')}</button><button class="btn" data-act="lib" data-v="scana">${ic('scan', 16)} ${t('Обновить музыку')}</button>
-            <button class="btn" data-act="lib" data-v="cleanv">${ic('eraser', 16)} ${t('Очистить видео')}</button><button class="btn" data-act="lib" data-v="cleana">${ic('eraser', 16)} ${t('Очистить музыку')}</button><button class="btn" data-act="vrestore" title="${t('Вернуть тип содержимого (фильмы/сериалы) и скрапер источников из копии базы')}">${ic('rotate', 16)} ${t('Восстановить содержимое источников')}</button></div>
+            <button class="btn" data-act="lib" data-v="scanv" title="${t('Сканировать источники видео и убрать удалённые')}">${ic('scan', 16)} ${t('Обновить видео')}</button><button class="btn" data-act="lib" data-v="scana" title="${t('Сканировать источники музыки и убрать удалённые')}">${ic('scan', 16)} ${t('Обновить музыку')}</button></div>
+            <div class="btns" style="margin-top:12px">
+            <button class="btn danger" data-act="lib" data-v="wipev" title="${t('Полностью сбросить базу видео (фильмы, сериалы, клипы): все записи, отметки просмотра, точки возобновления и оценки. Файлы не удаляются; создаётся копия *.glassbak. После этого нажмите «Обновить видео».')}">${ic('trash', 16)} ${t('Полностью очистить видео')}</button>
+            <button class="btn danger" data-act="lib" data-v="wipem" title="${t('Полностью сбросить базу музыки: все записи, отметки и оценки. Файлы не удаляются; создаётся копия *.glassbak. После этого нажмите «Обновить музыку».')}">${ic('trash', 16)} ${t('Полностью очистить музыку')}</button>
+            <button class="btn" data-act="vrestore" title="${t('Вернуть тип содержимого (фильмы/сериалы) и скрапер источников из копии базы')}">${ic('rotate', 16)} ${t('Восстановить содержимое источников')}</button></div>
             <h3 class="ph3" style="margin-top:22px">${t('Уведомление на экране')}</h3><div class="grp"><input class="inp" id="nt" placeholder="${t('Текст уведомления')}"><button class="btn primary" data-act="notify">${ic('bell', 16)}</button></div></div>
           <div class="glass panel"><h3 class="ph3">${t('Питание')}</h3><div class="btns">
             ${P.cansuspend ? html`<button class="btn" data-act="power" data-v="Suspend">${ic('moon', 16)} ${t('Сон')}</button>` : ''}${P.canhibernate ? html`<button class="btn" data-act="power" data-v="Hibernate">${ic('moon', 16)} ${t('Гибернация')}</button>` : ''}
@@ -317,7 +320,9 @@
     }).catch(K.err);
   };
   K.acts.lib = function (el) {
-    var v = el.dataset.v, kind = /v$/.test(v) ? 'video' : 'music';
+    var v = el.dataset.v;
+    if (v === 'wipev' || v === 'wipem') return K.libWipe(v === 'wipev' ? 'video' : 'music');
+    var kind = /v$/.test(v) ? 'video' : 'music';
     return /clean/.test(v) ? K.libClean(kind) : K.libScanOnly(kind);
   };
   K.acts.notify = function () { var i = $('#nt'); if (!i.value) return; return K.rpc('GUI.ShowNotification', { title: 'Glass Control', message: i.value }).then(function () { i.value = ''; K.toast(t('Отправлено'), 'ok'); }); };

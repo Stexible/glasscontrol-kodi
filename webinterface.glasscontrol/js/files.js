@@ -47,8 +47,8 @@
     var path = ctx.q.p || '', media = o.media, all = ctx.q.all === '1', base = '#' + o.base, link = function (p) { return base + (o.base === '/files' ? '?t=' + media + '&' : '?') + 'p=' + encodeURIComponent(p) + (all ? '&all=1' : ''); };
     var root = base + (o.base === '/files' ? '?t=' + media : '');
     var libKind = media === 'music' ? 'music' : 'video';
-    var bar = html`<div class="libbar"><button class="btn sm" data-act="lscan" data-v="${libKind}" ${path ? raw('data-p="' + K.esc(path) + '"') : ''}>${ic('refresh', 16)} ${path ? t('Сканировать папку') : t('Обновить')}</button>
-      <button class="btn sm" data-act="lclean" data-v="${libKind}" title="${t('Полностью сбросить базу медиатеки, чтобы собрать её заново')}">${ic('eraser', 16)} ${t('Очистить')}</button><button class="icon-btn" data-act="srcs" data-v="${media}" aria-label="${t('Источники')}" title="${t('Источники')}">${ic('sliders', 18)}</button></div>`;
+    var bar = html`<div class="libbar"><button class="btn sm" data-act="lscan" data-v="${libKind}" ${path ? raw('data-p="' + K.esc(path) + '"') : ''} title="${path ? t('Сканировать эту папку') : t('Обновить: сканировать источники и убрать удалённые записи')}">${ic('refresh', 16)} ${path ? t('Сканировать папку') : t('Обновить')}</button>
+      <button class="icon-btn" data-act="srcs" data-v="${media}" aria-label="${t('Источники')}" title="${t('Источники')}">${ic('sliders', 18)}</button></div>`;
     var title = o.title || t('Файлы');
     if (!path) {
       var srcPromise = K.be.ok ? K.be.call('/api/sources/list', { media: media }).then(function (r) { return (r.sources || []).map(function (s) { return { label: s.name, file: (s.paths && s.paths[0]) || '' }; }); }).catch(function () { return null; }) : (K.be && K.be.retry ? K.be.retry().then(function (ok) { if (!ok) return null; return K.be.call('/api/sources/list', { media: media }).then(function (r) { return (r.sources || []).map(function (s) { return { label: s.name, file: (s.paths && s.paths[0]) || '' }; }); }).catch(function () { return null; }); }).catch(function () { return null; }) : Promise.resolve(null));
@@ -102,7 +102,7 @@
   K.acts.fplaydir = function (el) { return K.play({ directory: el.dataset.p }); };
   K.acts.fqdir = function (el) { return K.queue({ directory: el.dataset.p }, { pl: K.fmedia === 'music' ? 0 : 1 }); };
   K.acts.srcscan = function (el) { return K.libScanOnly(el.dataset.v, el.dataset.p); };
-  K.acts.lscan = (function (o) { return function (el) { return K.libScanOnly(el.dataset.v, el.dataset.p); }; })();
+  K.acts.lscan = function (el) { var p = el.dataset.p; return p ? K.libScanOnly(el.dataset.v, p) : K.libUpdate(el.dataset.v); };
   K.acts.fsm = function () { K.fsm = !K.fsm; K.fsel = {}; K.fdraw && K.fdraw(); };
   K.acts.fpick = function (el) { var i = +el.dataset.i; if (K.fsel[i]) delete K.fsel[i]; else K.fsel[i] = 1; K.fdraw && K.fdraw(); };
   K.acts.fall = function () { var n = Object.keys(K.fsel).length; K.fsel = {}; if (n < K.fl.length) K.fl.forEach(function (f, i) { K.fsel[i] = 1; }); K.fdraw && K.fdraw(); };
